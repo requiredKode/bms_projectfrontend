@@ -2,29 +2,24 @@ import { useEffect, useState } from "react";
 import DivAdd from "../../components/DivAdd";
 import DivTable from "../../components/DivTable";
 import Modal from "../../components/Modal";
-import { confirmation, sendRequest } from "../../functions";
+import { confirmation, sendRequestWithFile } from "../../functions";
 import { useNavigate } from "react-router-dom";
-
-// Importa Dropzone desde react-dropzone
 import Dropzone from "react-dropzone";
 
 const Files = () => {
   const history = useNavigate();
-
   const [files, setFiles] = useState([]);
   const [classLoad, setClassLoad] = useState("");
-  const [classTable, setClassTable] = useState("d-none");
-
-  let method = "";
-  let url = "";
+  const [classTable, setClassTable] = useState("");
+  const [fileToUpload, setFileToUpload] = useState(null);
 
   useEffect(() => {
-    getFile(1);
+    getFile();
   }, []);
 
   const getFile = async () => {
     try {
-      const res = await sendRequest("GET", "/files", "", "", "", true);
+      const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
       setFiles(res.data);
       setClassTable("");
       setClassLoad("d-none");
@@ -34,20 +29,16 @@ const Files = () => {
   };
 
   const handleErrors = (error) => {
-    if (
-      error.response &&
-      error.response.data &&
-      error.response.data.error === "NOT_SESSION"
-    ) {
+    if (error.response && error.response.data && error.response.data.error === "NOT_SESSION") {
       localStorage.clear();
-      history.push("/login");
+      history("/login");
     } else {
       console.error("Error en la solicitud:", error);
     }
   };
 
   const deleteFile = (id, name) => {
-    confirmation(name, "/files/" + id, "/files");
+    confirmation(name, `/files/${id}`, "/files");
   };
 
   const onDrop = async (acceptedFiles) => {
@@ -56,33 +47,26 @@ const Files = () => {
       return;
     }
 
-    const fileToUpload = acceptedFiles[0];
-    console.log(fileToUpload);
+    const selectedFile = acceptedFiles[0];
+    setFileToUpload(selectedFile);
+  };
+
+  const handleUpload = async () => {
+    if (!fileToUpload) {
+      console.error("No se ha seleccionado un archivo para cargar.");
+      return;
+    }
 
     const formData = new FormData();
-    formData.append("file", fileToUpload); // Añade el archivo con la clave "file"
+    formData.append("file", fileToUpload);
     formData.append("fileName", fileToUpload.name);
     formData.append("fileType", fileToUpload.type);
 
-    console.log("formData:");
-    console.log(formData.get("file")); // Accede al archivo adjunto
-    console.log(formData.get("fileName"));
-
-    method = "POST";
-    url = "/files";
-
     try {
-      const res = await sendRequest(
-        method,
-        url,
-        formData,
-        "GUARDADO CON ÉXITO",
-        ""
-      );
-      if (res.data) {
-        getFile(1);
-        // Otras acciones después de cargar el archivo, si es necesario
-      }
+      await sendRequestWithFile("POST", "/files", formData, "GUARDADO CON ÉXITO", "");
+      getFile();
+      // Reinicia el estado después de cargar el archivo
+      setFileToUpload(null);
     } catch (error) {
       handleErrors(error);
     }
@@ -91,11 +75,7 @@ const Files = () => {
   return (
     <div className="container-fluid">
       <DivAdd>
-        <button
-          className="btn btn-dark"
-          data-bs-toggle="modal"
-          data-bs-target="#modalFile"
-        >
+        <button className="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalFile">
           <i className="fa-solid fa-circle-plus"></i> Agregar
         </button>
       </DivAdd>
@@ -113,10 +93,7 @@ const Files = () => {
                 <td>{i + 1}</td>
                 <td>{row.fileName}</td>
                 <td>
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => deleteFile(row.id, row.fileName)}
-                  >
+                  <button className="btn btn-danger" onClick={() => deleteFile(row.id, row.fileName)}>
                     <i className="fa-solid fa-trash"></i>
                   </button>
                 </td>
@@ -128,22 +105,25 @@ const Files = () => {
       <Modal title="Subir Archivo" modal="modalFile">
         <div className="modal-body">
           <div className="dropzone">
-            <Dropzone onDrop={onDrop}>
-              {({ getRootProps, getInputProps }) => (
-                <div {...getRootProps()} className="dropzone-area">
+            <Dropzone onDrop={onDrop} noClick={true} multiple={false}>
+              {({ getRootProps, getInputProps, isDragActive }) => (
+                <div {...getRootProps()} className={`dropzone-area border-primary rounded p-3 text-center ${isDragActive ? "bg-primary text-white" : ""}`}>
                   <input {...getInputProps()} name="file" />
-                  <p>
-                    Arrastra y suelta archivos aquí, o haz clic para seleccionar
-                    archivos
-                  </p>
+                  {fileToUpload ? (
+                    <>
+                      <p className="mb-0"><i className="fa-solid fa-file-upload"></i> {fileToUpload.name}</p>
+                      <button className="btn btn-success mt-3" onClick={handleUpload}>
+                        <i className="fa-solid fa-upload"></i> Subir archivo
+                      </button>
+                    </>
+                  ) : (
+                    <p className="mb-0">
+                      {isDragActive ? "Suelta el archivo aquí" : "Arrastra y suelta aquí el archivo que deseas subir"}
+                    </p>
+                  )}
                 </div>
               )}
             </Dropzone>
-          </div>
-          <div className="d-grid col-10 mx-auto">
-            <button className="btn btn-success">
-              <i className="fa-solid fa-upload"></i> Subir archivo
-            </button>
           </div>
         </div>
         <div className="modal-footer">

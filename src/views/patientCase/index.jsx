@@ -1,4 +1,14 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  getCurrentDate,
+  formatDateToYYYYMMDD,
+  formatDateToDDMMYYYY,
+  confirmation,
+  sendRequest,
+  sendRequestWithFile,
+} from "../../functions";
+import { PaginationControl } from "react-bootstrap-pagination-control";
 import DivAdd from "../../components/DivAdd";
 import DivTable from "../../components/DivTable";
 import DivInput from "../../components/DivInput";
@@ -8,15 +18,7 @@ import DivTabs from "../../components/DivTabs";
 import DivTab from "../../components/DivTab";
 import Checkbox from "../../components/DivCheckBox";
 import Modal from "../../components/Modal";
-import {
-  confirmation,
-  sendRequest,
-  getCurrentDate,
-  formatDateToYYYYMMDD,
-  formatDateToDDMMYYYY,
-} from "../../functions";
-import { PaginationControl } from "react-bootstrap-pagination-control";
-import { useNavigate } from "react-router-dom";
+import ViewPdf from "../../components/ViewPdf";
 
 const PatientCase = () => {
   const history = useNavigate();
@@ -76,6 +78,9 @@ const PatientCase = () => {
   let method = "";
   let url = "";
 
+  const [pdfData, setPdfData] = useState();
+  const [verPDF, setVerPDF] = useState(false);
+
   const ShowModal = () => {
     setShowModal(true);
   };
@@ -95,6 +100,7 @@ const PatientCase = () => {
     fetchData("country", setCountries);
     fetchData("service", setServices);
     getAppointmentSchedule(1);
+    getFiles();
   }, []);
 
   const getPatientCase = async (page) => {
@@ -148,6 +154,15 @@ const PatientCase = () => {
         true
       );
       setter(res.data);
+    } catch (error) {
+      handleErrors(error);
+    }
+  };
+
+  const getFiles = async () => {
+    try {
+      const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
+      setPdfData(res.data);
     } catch (error) {
       handleErrors(error);
     }
@@ -820,13 +835,17 @@ const PatientCase = () => {
                 <DivAdd>
                   <button
                     className="btn btn-dark"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalConsentimiento"
-                    onClick={() => openModal(1)}
+                    onClick={() => {
+                      setVerPDF(!verPDF);
+                    }}
+                    type="submit"
                   >
-                    <i className="fa-solid fa-upload"></i> Subir Archivo
+                    <i className="fa-solid fa-upload"></i> Firmar Documento
                   </button>
                 </DivAdd>
+                {pdfData ? (
+                  <>{verPDF ? <ViewPdf pdfData={pdfData} /> : null}</>
+                ) : null}
                 <br />
               </DivTab>
             </DivTabs>

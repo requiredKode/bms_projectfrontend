@@ -53,6 +53,45 @@ export const sendRequest = async (method, url, data, successMessage = '', redire
   }
 };
 
+// Modificada función sendRequest que admite el envío de archivos con FormData
+export const sendRequestWithFile = async (method, url, formData, successMessage = '', redirectTo = '', token = true) => {
+  if (token) {
+    configureAuthHeaders();
+  }
+
+  try {
+    const response = await axios({
+      method: method,
+      url: url,
+      data: formData,  // Utiliza el objeto FormData para el envío de archivos
+      headers: {
+        'Content-Type': 'multipart/form-data', // Configura el tipo de contenido como 'multipart/form-data'
+      },
+    });
+
+    const responseData = response.data;
+
+    if (successMessage) {
+      show_alert(successMessage, 'success');
+    }
+
+    if (redirectTo) {
+      setTimeout(() => {
+        window.location.href = redirectTo;
+      }, 2000);
+    }
+
+    return responseData;
+  } catch (error) {
+    // Manejar errores de red u otros errores
+    const errorDescription = error.response ? error.response.data.error : '';
+
+    show_alert(errorDescription || 'Error de conexión con el servidor', 'error');
+
+    throw error;
+  }
+};
+
 // Función para mostrar una confirmación antes de realizar una acción
 export const confirmation = async (name, url, redir) => {
   const alert = Swal.mixin({ buttonsStyling: true });
@@ -96,8 +135,16 @@ export const formatDateToDDMMYYYY = (dateTimeString) => {
   return `${day}-${month}-${year}`;
 };
 
-
-
+export const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(reader.result.split(',')[1]); // Extraer el contenido en base64, excluyendo el prefijo
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default show_alert;
 
