@@ -1,32 +1,41 @@
-import { useEffect, useState, useRef } from 'react';
-import DivAdd from '../../components/DivAdd';
-import DivTable from '../../components/DivTable';
-import DivInput from '../../components/DivInput';
-import Modal from '../../components/Modal';
-import { confirmation, sendRequest } from '../../functions';
-import { PaginationControl } from 'react-bootstrap-pagination-control';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from "react";
+import DivAdd from "../../components/DivAdd";
+import DivTable from "../../components/DivTable";
+import DivInput from "../../components/DivInput";
+import Modal from "../../components/Modal";
+import { getCurrentDate, confirmation, sendRequest, formatDateToDDMMYYYY, formatDateToYYYYMMDD } from "../../functions";
+import { PaginationControl } from "react-bootstrap-pagination-control";
+import { useNavigate } from "react-router-dom";
+import DivTextArea from "../../components/DivTextArea";
+import DivSelect from "../../components/DivSelect";
+import Checkbox from "../../components/DivCheckBox";
 
-const Company = () => {
-  const history = useNavigate(); // Instancia de useHistory
+const Inventory = () => {
+  const history = useNavigate();
 
-  const [companies, setCompanies] = useState([]);
-  const [id, setId] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [countryId, setCountryId] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [website, setWebSite] = useState('');
-  const [description, setDescription] = useState('');
+  const [inventories, setInventories] = useState([]);
+  const [measurements, setMeasurements] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [id, setId] = useState("");
+  const [code, setCode] = useState("");
+  const [cabys, setCabys] = useState("");
+  const [inventoryName, setInventoryName] = useState("");
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [measurementId, setMeasurementId] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [grossCost, setGrossCost] = useState("");
+  const [netCost, setNetCost] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [totalCost, setTotalCost] = useState("");
+  const [stockAlert, setStockAlert] = useState(false);
+  const [minimumQuantity, setMinimumQuantity] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("");
 
-  const [operation, setOperation] = useState('');
-  const [title, setTitle] = useState('');
-  const [classLoad, setClassLoad] = useState('');
-  const [classTable, setClassTable] = useState('d-none');
+  const [operation, setOperation] = useState("");
+  const [title, setTitle] = useState("");
+  const [classLoad, setClassLoad] = useState("");
+  const [classTable, setClassTable] = useState("d-none");
   const [rows, setRows] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(0);
@@ -34,117 +43,179 @@ const Company = () => {
   const nameInputRef = useRef();
   const closeRef = useRef();
 
-  let method = '';
-  let url = '';
+  let method = "";
+  let url = "";
 
   useEffect(() => {
-    getCompany(1);
+    const currentDate = getCurrentDate();
+    setPurchaseDate(currentDate);
+    setUpdatedAt(currentDate);
+    getInventory(1);
+    fetchData("measurement", setMeasurements);
+    fetchData("supplier", setSuppliers);
   }, []);
 
-  const getCompany = async (page) => {
+  const getInventory = async (page) => {
     try {
       const res = await sendRequest(
-        'GET',
-        `/company?page=${page}&per_page=${pageSize}`,
-        '',
-        '',
-        '',
+        "GET",
+        `/inventory?page=${page}&per_page=${pageSize}`,
+        "",
+        "",
+        "",
         true
       );
-      setCompanies(res.data);
+      setInventories(res.data);
       setRows(res.total);
       setPageSize(res.per_page);
-      setClassTable('');
-      setClassLoad('d-none');
+      setClassTable("");
+      setClassLoad("d-none");
     } catch (error) {
-      // Comprueba si la respuesta contiene el error NOT_SESSION
-      if (error.response && error.response.data && error.response.data.error === 'NOT_SESSION') {
-        // Redirige al usuario a la página de inicio de sesión y limpia el almacenamiento
-        localStorage.clear(); // Esto eliminará todos los datos almacenados en el local storage
-        history.push('/login'); // Cambia '/login' por la ruta real de tu página de inicio de sesión
-        return;
-      }
-  
-      // Manejar otros errores aquí si es necesario
-      console.error('Error en la solicitud:', error);
-  }
-  }
-  
-  const deleteCompany = (id, name) => {
-    confirmation(name, '/company/' + id, '/company');
+      handleErrors(error);
+    }
+  };
+
+  const fetchData = async (endpoint, setter) => {
+    try {
+      const res = await sendRequest(
+        "GET",
+        `/${endpoint}?page=${page}&per_page=${100}`,
+        "",
+        "",
+        "",
+        true
+      );
+      setter(res.data);
+    } catch (error) {
+      handleErrors(error);
+    }
+  };
+
+  const deleteInventory = (id, name) => {
+    confirmation(name, "/inventory/" + id, "/inventory");
   };
 
   const clear = () => {
-    setCompanyName('');
-    setAddress('');
-    setCity('');
-    setState('');
-    setPostalCode('');
-    setCountryId('');
-    setPhoneNumber('');
-    setEmail('');
-    setWebSite('');
-    setDescription('');
+    setCode("");
+    setCabys("");
+    setInventoryName("");
+    setDescription("");
+    setQuantity("");
+    setMeasurementId("1");
+    setGrossCost("");
+    setNetCost("");
+    setSupplierId("1");
+    setTotalCost("");
+    setStockAlert(false);
+    setMinimumQuantity("");
   };
 
-  const openModal = (OPERATION, ID, COMPANYNAME, ADDRESS, CITY, STATE, POSTALCODE, COUNTRYID, PHONENUMBER, EMAIL, WEBSITE, DESCRIPTION) => {
+  const openModal = (
+    OPERATION,
+    ID,
+    CODE,
+    CABYS,
+    INVENTORYNAME,
+    DESCRIPTION,
+    QUANTITY,
+    MEASUREMENTID,
+    PURCHASEDATE,
+    GROSSCOST,
+    NETCOST,
+    SUPPLIERID,
+    TOTALCOST,
+    STOCKALERT,
+    MINIMUMQUANTITY,
+    UPDATEDAT
+  ) => {
     clear();
+
+    const formattedPurchaseDate = formatDateToYYYYMMDD(PURCHASEDATE);
+    const formattedUpdatedAt = formatDateToYYYYMMDD(UPDATEDAT);
+
     setTimeout(() => nameInputRef.current.focus(), 600);
     setOperation(OPERATION);
     setId(ID);
     if (OPERATION === 1) {
-      setTitle('Nueva Empresa');
+      setTitle("Nuevo Producto");
     } else {
-      setTitle('Actualizar Empresa');
-      setCompanyName(COMPANYNAME);
-      setAddress(ADDRESS);
-      setCity(CITY);
-      setState(STATE);
-      setPostalCode(POSTALCODE);
-      setCountryId(COUNTRYID);
-      setPhoneNumber(PHONENUMBER);
-      setEmail(EMAIL);
-      setWebSite(WEBSITE);
+      setTitle("Actualizar Producto");
+      setCode(CODE);
+      setCabys(CABYS);
+      setInventoryName(INVENTORYNAME);
       setDescription(DESCRIPTION);
+      setQuantity(QUANTITY);
+      setMeasurementId(MEASUREMENTID);
+      setPurchaseDate(formattedPurchaseDate);
+      setGrossCost(GROSSCOST);
+      setNetCost(NETCOST);
+      setSupplierId(SUPPLIERID);
+      setTotalCost(TOTALCOST);
+      setStockAlert(STOCKALERT);
+      setMinimumQuantity(MINIMUMQUANTITY);
+      setUpdatedAt(formattedUpdatedAt);
     }
   };
 
   const save = async (e) => {
     e.preventDefault();
-    method = operation === 1 ? 'POST' : 'PUT';
-    url = operation === 1 ? '/company' : '/company/' + id;
+    method = operation === 1 ? "POST" : "PUT";
+    url = operation === 1 ? "/inventory" : "/inventory/" + id;
     const form = {
-      companyName: companyName,
-      address: address,
-      city: city,
-      state: state,
-      postalCode: postalCode,
-      countryId: countryId,
-      phoneNumber: phoneNumber,
-      email: email,
-      website: website,
+      code: code,
+      cabys: cabys,
+      inventoryName: inventoryName,
       description: description,
+      quantity: quantity,
+      measurementId: measurementId,
+      purchaseDate: purchaseDate,
+      grossCost: grossCost,
+      netCost: netCost,
+      supplierId: supplierId,
+      totalCost: totalCost,
+      stockAlert: stockAlert,
+      minimumQuantity: minimumQuantity,
+      updatedAt: updatedAt,
     };
-    
+
     try {
-      const res = await sendRequest(method, url, form, 'GUARDADO CON EXITO', '');
-      if (method === 'PUT' && res.data && res.data.id !== null) {
+      const res = await sendRequest(
+        method,
+        url,
+        form,
+        "GUARDADO CON EXITO",
+        ""
+      );
+      if (method === "PUT" && res.data && res.data.companyId !== null) {
         closeRef.current.click();
       }
-      if (res.data && res.data.id !== null) {
+      if (res.data && res.data.companyId !== null) {
         clear();
         setPage(1);
-        getCompany(1);
+        getInventory(1);
         setTimeout(() => nameInputRef.current.focus(), 3000);
       }
     } catch (error) {
-      // Manejar errores aquí si es necesario
+      handleErrors(error);
     }
   };
 
   const goPage = (p) => {
     setPage(p);
-    getCompany(p);
+    getInventory(p);
+  };
+  
+  const handleErrors = (error) => {
+    if (
+      error.response &&
+      error.response.data &&
+      error.response.data.error === "NOT_SESSION"
+    ) {
+      localStorage.clear();
+      history.push("/login");
+    } else {
+      console.error("Error en la solicitud:", error);
+    }
   };
 
   return (
@@ -153,7 +224,7 @@ const Company = () => {
         <button
           className="btn btn-dark"
           data-bs-toggle="modal"
-          data-bs-target="#modalCompany"
+          data-bs-target="#modalInventory"
           onClick={() => openModal(1)}
         >
           <i className="fa-solid fa-circle-plus"></i> Agregar
@@ -164,26 +235,47 @@ const Company = () => {
           <thead>
             <tr>
               <th>#</th>
-              <th>Codigo</th>
-              <th>Servicio</th>
-              <th>Descripcion</th>
-              <th>Costo</th>
+              <th>Producto</th>
+              <th>Cantidad Disponible</th>
+              <th>Fecha Actualizacion</th>
+              <th>Fecha Compra</th>
+              <th>Costo Total</th>
             </tr>
           </thead>
           <tbody className="table-group-divider">
-            {services.map((row, i) => (
+            {inventories.map((row, i) => (
               <tr key={row.id}>
                 <td>{i + 1}</td>
-                <td>{row.code}</td>
-                <td>{row.serviceName}</td>
-                <td>{row.descriptionService}</td>
-                <td>{row.cost}</td>
+                <td>{row.inventoryName}</td>
+                <td>{row.quantity}</td>
+                <td>{formatDateToDDMMYYYY(row.updatedAt)}</td>
+                <td>{formatDateToDDMMYYYY(row.purchaseDate)}</td>
+                <td>{row.totalCost}</td>
                 <td>
                   <button
                     className="btn btn-warning"
                     data-bs-toggle="modal"
-                    data-bs-target="#modalService"
-                    onClick={() => openModal(2, row.id, row.code, row.serviceName, row.descriptionService, row.cost)}
+                    data-bs-target="#modalInventory"
+                    onClick={() =>
+                      openModal(
+                        2,
+                        row.id,
+                        row.code,
+                        row.cabys,
+                        row.inventoryName,
+                        row.description,
+                        row.quantity,
+                        row.measurementId,
+                        row.purchaseDate,
+                        row.grossCost,
+                        row.netCost,
+                        row.supplierId,
+                        row.totalCost,
+                        row.stockAlert,
+                        row.minimumQuantity,
+                        row.updatedAt
+                      )
+                    }
                   >
                     <i className="fa-solid fa-edit"></i>
                   </button>
@@ -191,7 +283,7 @@ const Company = () => {
                 <td>
                   <button
                     className="btn btn-danger"
-                    onClick={() => deleteService(row.id, row.serviceName)}
+                    onClick={() => deleteInventory(row.id, row.inventoryName)}
                   >
                     <i className="fa-solid fa-trash"></i>
                   </button>
@@ -201,57 +293,160 @@ const Company = () => {
           </tbody>
         </table>
       </DivTable>
-      <PaginationControl changePage={page => goPage(page)} next={true} limit={pageSize} page={page} total={rows} />
-      <Modal title={title} modal="modalService">
+      <PaginationControl
+        changePage={(page) => goPage(page)}
+        next={true}
+        limit={pageSize}
+        page={page}
+        total={rows}
+      />
+      <Modal title={title} modal="modalInventory">
         <div className="modal-body">
           <form onSubmit={save}>
             <DivInput
               type="text"
-              icon="fa-code"
+              icon="fa-barcode"
               value={code}
               className="form-control"
-              placeholder="Code"
+              placeholder="Codigo"
               required="required"
               handleChange={(e) => setCode(e.target.value)}
             />
             <DivInput
               type="text"
-              icon="fa-user"
-              value={serviceName}
+              icon="fa-barcode"
+              value={cabys}
               className="form-control"
-              placeholder="Service Name"
+              placeholder="Codigo Cabys"
               required="required"
               ref={nameInputRef}
-              handleChange={(e) => setServiceName(e.target.value)}
+              handleChange={(e) => setCabys(e.target.value)}
             />
             <DivInput
               type="text"
-              icon="fa-info"
-              value={descriptionService}
+              icon="fa-box"
+              value={inventoryName}
               className="form-control"
-              placeholder="Description Service"
+              placeholder="Producto"
               required="required"
-              handleChange={(e) => setDescriptionService(e.target.value)}
+              handleChange={(e) => setInventoryName(e.target.value)}
+            />
+            <DivTextArea
+              type="text"
+              icon="fa-info-circle"
+              value={description}
+              className="form-control"
+              placeholder="Descripcion"
+              required="required"
+              handleChange={(e) => setDescription(e.target.value)}
+            />
+            <p>Cantidad:</p>
+            <DivInput
+              type="number"
+              icon="fa-arrow-up-9-1"
+              value={quantity}
+              className="form-control"
+              placeholder="Cantidad"
+              required="required"
+              handleChange={(e) => setQuantity(e.target.value)}
+            />
+            <p>Unidad de Medida:</p>
+            <DivSelect
+              icon="fa-balance-scale"
+              name="measurementId"
+              value={measurementId}
+              className="form-select"
+              options={measurements}
+              handleChange={(e) => setMeasurementId(e.target.value)}
+              displayProperty="measurementName"
+            />
+            <p>Fecha de Compra:</p>
+            <DivInput
+              type="date"
+              icon="fa-calendar"
+              value={purchaseDate}
+              className="form-control"
+              placeholder="Fecha Compra"
+              required="required"
+              handleChange={(e) => setPurchaseDate(e.target.value)}
             />
             <DivInput
-              type="text"
-              icon="fa-dollar"
-              value={cost}
+              type="number"
+              icon="fa-coins"
+              value={grossCost}
               className="form-control"
-              placeholder="Cost"
+              placeholder="Costo Bruto"
               required="required"
-              handleChange={(e) => setCost(e.target.value)}
+              handleChange={(e) => setGrossCost(e.target.value)}
+            />
+            <DivInput
+              type="number"
+              icon="fa-coins"
+              value={netCost}
+              className="form-control"
+              placeholder="Costo Neto"
+              required="required"
+              handleChange={(e) => setNetCost(e.target.value)}
+            />
+            <DivSelect
+              icon="fa-truck-field"
+              name="supplierId"
+              value={supplierId}
+              className="form-select"
+              options={suppliers}
+              handleChange={(e) => setSupplierId(e.target.value)}
+              displayProperty="supplierName"
+            />
+            <DivInput
+              type="number"
+              icon="fa-coins"
+              value={totalCost}
+              className="form-control"
+              placeholder="Costo Total"
+              required="required"
+              handleChange={(e) => setTotalCost(e.target.value)}
+            />
+            <Checkbox
+              id="stockAlert"
+              label="Alerta de Stock Bajo"
+              checked={stockAlert}
+              onChange={() => setStockAlert(!stockAlert)}
+            />
+            <br />
+            <DivInput
+              type="number"
+              icon="fa-arrow-down-9-1"
+              value={minimumQuantity}
+              className="form-control"
+              placeholder="Cantidad Minima"
+              required="required"
+              handleChange={(e) => setMinimumQuantity(e.target.value)}
+            />
+
+            <p>Fecha de Actualizacion:</p>
+            <DivInput
+              type="date"
+              icon="fa-calendar"
+              value={updatedAt}
+              className="form-control"
+              placeholder="Fecha Actualizacion"
+              required="required"
+              handleChange={(e) => setUpdatedAt(e.target.value)}
             />
             <div className="d-grid col-10 mx-auto">
               <button className="btn btn-success">
-                <i className="fa-solid fa-save"></i> SAVE
+                <i className="fa-solid fa-save"></i> Guardar
               </button>
             </div>
           </form>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-dark" data-bs-dismiss="modal" ref={closeRef}>
-            Close
+          <button
+            className="btn btn-dark"
+            data-bs-dismiss="modal"
+            ref={closeRef}
+          >
+            Cerrar
           </button>
         </div>
       </Modal>
@@ -259,4 +454,4 @@ const Company = () => {
   );
 };
 
-export default Company;
+export default Inventory;

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   getCurrentDate,
   formatDateToYYYYMMDD,
@@ -18,7 +18,6 @@ import DivTabs from "../../components/DivTabs";
 import DivTab from "../../components/DivTab";
 import Checkbox from "../../components/DivCheckBox";
 import Modal from "../../components/Modal";
-import ViewPdf from "../../components/ViewPdf";
 
 const PatientCase = () => {
   const history = useNavigate();
@@ -52,6 +51,7 @@ const PatientCase = () => {
   const [smokingHabit, setSmokingHabit] = useState(false);
   const [drugsUse, setDrugsUse] = useState(false);
   const [foodAllergies, setFoodAllergies] = useState(false);
+  const [drugsAllergies, setDrugsAllergies] = useState("");
   const [treatmentName, setTreatmentName] = useState("");
   const [dose, setDose] = useState("");
   const [frequency, setFrequency] = useState("");
@@ -78,9 +78,6 @@ const PatientCase = () => {
   let method = "";
   let url = "";
 
-  const [pdfData, setPdfData] = useState();
-  const [verPDF, setVerPDF] = useState(false);
-
   const ShowModal = () => {
     setShowModal(true);
   };
@@ -99,7 +96,6 @@ const PatientCase = () => {
     fetchData("gender", setGenders);
     fetchData("country", setCountries);
     fetchData("service", setServices);
-    getAppointmentSchedule(1);
     getFiles();
   }, []);
 
@@ -123,11 +119,11 @@ const PatientCase = () => {
     }
   };
 
-  const getAppointmentSchedule = async (page) => {
+  const getAppointmentSchedule = async (id) => {
     try {
       const res = await sendRequest(
         "GET",
-        `/appointmentSchedule?page=${page}&per_page=${pageSize}`,
+        "/appointmentSchedule/patient/" + id,
         "",
         "",
         "",
@@ -161,8 +157,8 @@ const PatientCase = () => {
 
   const getFiles = async () => {
     try {
-      const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
-      setPdfData(res.data);
+      //const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
+      //setPdfData(res.data);
     } catch (error) {
       handleErrors(error);
     }
@@ -191,10 +187,11 @@ const PatientCase = () => {
     setPatientHistoryId("");
     setTreatmentId("");
     setDiseaseId("");
-    setAlcoholConsumption("");
-    setSmokingHabit("");
-    setDrugsUse("");
-    setFoodAllergies("");
+    setAlcoholConsumption(false);
+    setSmokingHabit(false);
+    setDrugsUse(false);
+    setFoodAllergies(false);
+    setDrugsAllergies("");
     setTreatmentName("");
     setDose("");
     setFrequency("");
@@ -226,6 +223,7 @@ const PatientCase = () => {
     SMOKINGHABIT,
     DRUGSUSE,
     FOODALLERGIES,
+    DRUGSALLERGIES,
     TREATMENTNAME,
     DOSE,
     FREQUENCY,
@@ -245,6 +243,7 @@ const PatientCase = () => {
 
     if (OPERATION === 1) {
       setTitle("Nuevo Paciente");
+      getAppointmentSchedule(0); //le pasamos un 0 de Id de paciente para que cuando se agregue un nuevo paciente, la tabla este vacia
     } else {
       setTitle("Actualizar Paciente");
       setCountryId(COUNTRYID);
@@ -269,12 +268,14 @@ const PatientCase = () => {
       setSmokingHabit(SMOKINGHABIT);
       setDrugsUse(DRUGSUSE);
       setFoodAllergies(FOODALLERGIES);
+      setDrugsAllergies(DRUGSALLERGIES);
       setTreatmentName(TREATMENTNAME);
       setDose(DOSE);
       setFrequency(FREQUENCY);
       setStartDate(formattedStartDate);
       setEndDate(formattedEndDate);
       setDiseaseName(DISEASENAME);
+      getAppointmentSchedule(ID);
     }
   };
 
@@ -310,6 +311,7 @@ const PatientCase = () => {
         smokingHabit: smokingHabit,
         drugsUse: drugsUse,
         foodAllergies: foodAllergies,
+        drugsAllergies: drugsAllergies,
       },
       treatment: {
         treatmentName: treatmentName,
@@ -399,14 +401,13 @@ const PatientCase = () => {
           "GUARDADO CON EXITO",
           ""
         );
-
         if (method === "PUT" && res.data && res.data.companyId !== null) {
           closeRef.current.click();
         }
         if (res.data && res.data.companyId !== null) {
           clear();
           setPage(1);
-          getAppointmentSchedule(1);
+          getAppointmentSchedule(appointmentSchedulePatientId);
         }
       }
     } catch (error) {
@@ -426,7 +427,7 @@ const PatientCase = () => {
       error.response.data.error === "NOT_SESSION"
     ) {
       localStorage.clear();
-      history("/login");
+      history.push("/login");
     } else {
       console.error("Error en la solicitud:", error);
     }
@@ -504,6 +505,7 @@ const PatientCase = () => {
                         row.patientHistory.smokingHabit,
                         row.patientHistory.drugsUse,
                         row.patientHistory.foodAllergies,
+                        row.patientHistory.drugsAllergies,
                         row.treatment.treatmentName,
                         row.treatment.dose,
                         row.treatment.frequency,
@@ -711,6 +713,15 @@ const PatientCase = () => {
                   checked={foodAllergies}
                   onChange={() => setFoodAllergies(!foodAllergies)}
                 />
+                <DivTextArea
+                  type="Text"
+                  name="drugsAllergies"
+                  icon="fa-pills"
+                  value={drugsAllergies}
+                  className="form-control"
+                  placeholder="Alergias a medicamentos"
+                  handleChange={(e) => setDrugsAllergies(e.target.value)}
+                />
                 <br />
                 <p>Tratamiento</p>
                 <br />
@@ -765,7 +776,7 @@ const PatientCase = () => {
                 <DivTextArea
                   type="Date"
                   name="diseaseName"
-                  icon="fa-disease"
+                  icon="fa-dna"
                   value={diseaseName}
                   className="form-control"
                   placeholder="Enfermedad(es)"
@@ -835,18 +846,15 @@ const PatientCase = () => {
                 <DivAdd>
                   <button
                     className="btn btn-dark"
-                    onClick={() => {
-                      setVerPDF(!verPDF);
-                    }}
-                    type="submit"
+                    data-bs-dismiss="modal"
+                    ref={closeRef}
+                    onClick={closeModal}
                   >
-                    <i className="fa-solid fa-upload"></i> Firmar Documento
+                    <Link to="/legalDocs" className="btn btn-dark">
+                      <i className="fa-solid fa-signature"> Firmar Documento</i>
+                    </Link>
                   </button>
                 </DivAdd>
-                {pdfData ? (
-                  <>{verPDF ? <ViewPdf pdfData={pdfData} /> : null}</>
-                ) : null}
-                <br />
               </DivTab>
             </DivTabs>
             <br />

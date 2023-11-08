@@ -17,7 +17,16 @@ export const configureAuthHeaders = () => {
     axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
   };
 
-// Función para enviar una solicitud y manejar errores
+/**
+ * 
+ * @param {*} method 
+ * @param {*} url 
+ * @param {*} data 
+ * @param {*} successMessage 
+ * @param {*} redirectTo 
+ * @param {*} token 
+ * @returns 
+ */
 export const sendRequest = async (method, url, data, successMessage = '', redirectTo = '', token = true) => {
     if (token) {
       configureAuthHeaders();

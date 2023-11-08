@@ -14,6 +14,11 @@ import TREATMENT from './views/treatment/index';
 import APPOINTMENTSCHEDULE from './views/appointmentSchedule/index'
 import PATIENTCASE from './views/patientCase/index';
 import FILES from './views/files/index';
+import INVENTORY from './views/inventory/index';
+import SETTINGS from './views/settings/index';
+import USERS from './views/users/index';
+import SCHEDULE from './views/schedule/index';
+import LEGALDOCS from './views/legalDocs/index';
 
 import LOGIN from './views/Login';
 import REGISTER from './views/Register';
@@ -42,6 +47,11 @@ function App() {
           <Route path="/appointmentSchedule" element={<APPOINTMENTSCHEDULE />} />
           <Route path="/patientCase" element={<PATIENTCASE />} />
           <Route path="/files" element={<FILES />} />
+          <Route path="/inventory" element={<INVENTORY />} />
+          <Route path="/settings" element={<SETTINGS />} />
+          <Route path="/users" element={<USERS />} />
+          <Route path="/schedule" element={<SCHEDULE />} />
+          <Route path="/legalDocs" element={<LEGALDOCS />} />
         </Route>
         
       </Routes>
