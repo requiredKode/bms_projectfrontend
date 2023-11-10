@@ -1,5 +1,6 @@
 export function cargarPDF() {
   var pdfData = atob($("#pdfBase64").val());
+
   var maxPDFx = 595;
   var maxPDFy = 842;
   var offsetY = 7;
@@ -24,123 +25,198 @@ export function cargarPDF() {
         canvasContext: context,
         viewport: viewport,
       };
-      //page.render(renderContext);
 
-      page.render(renderContext).then(
-        function () {
+      page
+        .render(renderContext)
+        .promise.then(function () {
           $(document).trigger("pagerendered");
-        },
-        function () {
-          console.log("ERROR");
-        }
-      );
+        })
+        .catch(function (error) {
+          console.error("ERROR:", error);
+        });
     });
   });
-}
 
-interact(".dropzone").dropzone({
-  accept: ".drag-drop",
-  overlap: 1,
+  interact(".dropzone").dropzone({
+    accept: ".drag-drop",
+    overlap: 1,
 
-  ondropactivate: function (event) {
-    event.target.classList.add("drop-active");
-  },
-  ondragenter: function (event) {
-    var draggableElement = event.relatedTarget,
-      dropzoneElement = event.target;
+    ondropactivate: function (event) {
+      event.target.classList.add("drop-active");
+    },
+    ondragenter: function (event) {
+      var draggableElement = event.relatedTarget,
+        dropzoneElement = event.target;
 
-    dropzoneElement.classList.add("drop-target");
-    draggableElement.classList.add("can-drop");
-    draggableElement.classList.remove("dropped-out");
-  },
-  ondragleave: function (event) {
-    event.target.classList.remove("drop-target");
-    event.relatedTarget.classList.remove("can-drop");
-    event.relatedTarget.classList.add("dropped-out");
-  },
-  ondrop: function (event) {
-    //event.relatedTarget.textContent = 'Dropped';
-  },
-  ondropdeactivate: function (event) {
-    event.target.classList.remove("drop-active");
-    event.target.classList.remove("drop-target");
-  },
-});
+      dropzoneElement.classList.add("drop-target");
+      draggableElement.classList.add("can-drop");
+      draggableElement.classList.remove("dropped-out");
+    },
+    ondragleave: function (event) {
+      event.target.classList.remove("drop-target");
+      event.relatedTarget.classList.remove("can-drop");
+      event.relatedTarget.classList.add("dropped-out");
+    },
+    ondrop: function (event) {
+      // event.relatedTarget.textContent = 'Dropped';
+    },
+    ondropdeactivate: function (event) {
+      event.target.classList.remove("drop-active");
+      event.target.classList.remove("drop-target");
+    },
+  });
 
-interact(".drag-drop").draggable({
-  inertia: true,
-  restrict: {
-    restriction: "#selectorContainer",
-    endOnly: true,
-    elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
-  },
-  autoScroll: true,
-  onmove: dragMoveListener,
-});
+  interact(".drag-drop").draggable({
+    inertia: true,
+    restrict: {
+      restriction: "#selectorContainer",
+      endOnly: true,
+      elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
+    },
+    autoScroll: true,
+    onmove: dragMoveListener,
+  });
 
-function dragMoveListener(event) {
-  var target = event.target,
-    x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx,
-    y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+  function dragMoveListener(event) {
+    var target = event.target,
+      x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx,
+      y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
 
-  target.style.webkitTransform = target.style.transform =
-    "translate(" + x + "px, " + y + "px)";
+    target.style.webkitTransform = target.style.transform =
+      "translate(" + x + "px, " + y + "px)";
 
-  target.setAttribute("data-x", x);
-  target.setAttribute("data-y", y);
-}
-
-window.dragMoveListener = dragMoveListener;
-
-$(document).bind("pagerendered", function (e) {
-  $("#pdfManager").show();
-  var parametri = JSON.parse($("#parameters").val());
-  $("#parametriContainer").empty();
-  renderizzaPlaceholder(parametri);
-});
-
-function renderizzaPlaceholder(parametri) {
-  var maxHTMLx = $("#the-canvas").width();
-  var maxHTMLy = $("#the-canvas").height();
-
-  var paramContainerWidth = $("#parametriContainer").width();
-  var yCounterOfGenerated = 0;
-
-  var notValidHeight = 30;
-  var y = 0;
-  var x = 6;
-
-  for (i = 0; i < parametri.length; i++) {
-    var param = parametri[i];
-
-    var classStyle = "";
-    var valore = param.valore;
-
-    var classStyle = "";
-    var valore = param.valore;
-    /*il placeholder non è valido: lo incolonna a sinistra*/
-    y = yCounterOfGenerated;
-    yCounterOfGenerated += notValidHeight;
-    classStyle = "drag-drop dropped-out";
-
-    $("#parametriContainer").append(
-      '<div class="' +
-        classStyle +
-        '" data-id="-1" data-toggle="' +
-        valore +
-        '" data-valore="' +
-        valore +
-        '" data-x="' +
-        x +
-        '" data-y="' +
-        y +
-        '" style="transform: translate(' +
-        x +
-        "px, " +
-        y +
-        'px);">  <span class="circle"></span><span class="descrizione">' +
-        param.descrizione +
-        " </span></div>"
-    );
+    target.setAttribute("data-x", x);
+    target.setAttribute("data-y", y);
   }
+
+  window.dragMoveListener = dragMoveListener;
+
+  $(document).on("pagerendered", function (e) {
+    $("#pdfManager").show();
+    var parametri = JSON.parse($("#parameters").val());
+    $("#parametriContainer").empty();
+    renderizzaPlaceholder(parametri);
+  });
+
+  function renderizzaPlaceholder(parametri) {
+    var maxHTMLx = $("#the-canvas").width();
+    var maxHTMLy = $("#the-canvas").height();
+
+    var paramContainerWidth = $("#parametriContainer").width();
+    var yCounterOfGenerated = 0;
+    var numOfMaxItem = 25;
+    var notValidHeight = 30;
+    var y = 0;
+    var x = 6;
+
+    for (var i = 0; i < parametri.length; i++) {
+      var param = parametri[i];
+
+      if (i > 0 && i % numOfMaxItem == 0) {
+        yCounterOfGenerated = 0;
+      }
+
+      var classStyle = "";
+      var valore = param.valore;
+
+      if (i > 0 && i % numOfMaxItem == 0) {
+        yCounterOfGenerated = 0;
+      }
+
+      y = yCounterOfGenerated;
+      yCounterOfGenerated += notValidHeight;
+      classStyle = "drag-drop dropped-out";
+
+      $("#parametriContainer").append(
+        '<div class="' +
+          classStyle +
+          '" data-id="-1" data-toggle="' +
+          valore +
+          '" data-valore="' +
+          valore +
+          '" data-x="' +
+          x +
+          '" data-y="' +
+          y +
+          '" style="transform: translate(' +
+          x +
+          "px, " +
+          y +
+          'px);">  <span class="circle"></span><span class="descrizione">' +
+          param.descrizione +
+          " </span></div>"
+      );
+    }
+  }
+
+  function renderizzaInPagina(parametri) {
+    var maxHTMLx = $("#the-canvas").width();
+    var maxHTMLy = $("#the-canvas").height();
+
+    var paramContainerWidth = $("#parametriContainer").width();
+    var yCounterOfGenerated = 0;
+    var numOfMaxItem = 26;
+    var notValidHeight = 30;
+    var y = 0;
+    var x = 6;
+    for (var i = 0; i < parametri.length; i++) {
+      var param = parametri[i];
+
+      var classStyle = "drag-drop can-drop";
+      var valore = param.valore;
+
+      var pdfY = maxPDFy - param.posizioneY - offsetY;
+      y = (pdfY * maxHTMLy) / maxPDFy;
+      x = (param.posizioneX * maxHTMLx) / maxPDFx + paramContainerWidth;
+
+      $("#parametriContainer").append(
+        '<div class="' +
+          classStyle +
+          '" data-id="' +
+          param.idParametroModulo +
+          '" data-toggle="' +
+          valore +
+          '" data-valore="' +
+          valore +
+          '" data-x="' +
+          x +
+          '" data-y="' +
+          y +
+          '" style="transform: translate(' +
+          x +
+          "px, " +
+          y +
+          'px);">  <span class="circle"></span><span class="descrizione">' +
+          param.descrizione +
+          " </span></div>"
+      );
+    }
+  }
+}
+
+export function descargarPDFConMarcadores(firmaCoordenadas) {
+  var canvas = document.getElementById("the-canvas");
+  var context = canvas.getContext("2d");
+
+  return new Promise(function (resolve) {
+    // Dibujar la firma en el canvas principal
+    context.drawImage(
+      firmaCoordenadas.canvas,
+      firmaCoordenadas.x,
+      firmaCoordenadas.y,
+      firmaCoordenadas.width,
+      firmaCoordenadas.height
+    );
+
+    // Generar el blob con los elementos superpuestos
+    canvas.toBlob(function (blob) {
+      var url = URL.createObjectURL(blob);
+
+      var link = document.createElement("a");
+      link.href = url;
+      link.download = "pdf_con_marcadores.pdf";
+
+      resolve(link);
+    }, "application/pdf");
+  });
 }

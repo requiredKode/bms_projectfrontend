@@ -12,13 +12,14 @@
   height: 80px;
 }
 
+/* modificar width para cambiar la zona de arrastre --- */
 .dropzone {
   background-color: #ccc;
   border: dashed 4px transparent;
   border-radius: 4px;
   margin: 10px auto 30px;
   padding: 10px;
-  width: 100%;
+  width: 603px;
   transition: background-color 0.3s;
 }
 
@@ -82,7 +83,7 @@
     border-radius: 5px;
     background: #323c3c;
     float: left;
-	display: inline-block;
+	  display: inline-block;
     margin-top: 1px;
     margin-right: 2px;
 }
@@ -107,7 +108,7 @@
     margin-left:240px;
     width:605px;
     height:100%;
-    z-index:1;
+    z-index:-11;
 }
 
 .page-item{
