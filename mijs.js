@@ -193,30 +193,3 @@ export function cargarPDF() {
     }
   }
 }
-
-export function descargarPDFConMarcadores(firmaCoordenadas) {
-  var canvas = document.getElementById("the-canvas");
-  var context = canvas.getContext("2d");
-
-  return new Promise(function (resolve) {
-    // Dibujar la firma en el canvas principal
-    context.drawImage(
-      firmaCoordenadas.canvas,
-      firmaCoordenadas.x,
-      firmaCoordenadas.y,
-      firmaCoordenadas.width,
-      firmaCoordenadas.height
-    );
-
-    // Generar el blob con los elementos superpuestos
-    canvas.toBlob(function (blob) {
-      var url = URL.createObjectURL(blob);
-
-      var link = document.createElement("a");
-      link.href = url;
-      link.download = "pdf_con_marcadores.pdf";
-
-      resolve(link);
-    }, "application/pdf");
-  });
-}

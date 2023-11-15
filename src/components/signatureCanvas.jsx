@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import interact from 'interactjs';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import SignatureCanvas from "react-signature-canvas";
