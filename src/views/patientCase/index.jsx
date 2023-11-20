@@ -21,6 +21,7 @@ import Modal from "../../components/Modal";
 
 const PatientCase = () => {
   const history = useNavigate();
+  const [files, setFiles] = useState([]);
   const [patientCases, setPatientCases] = useState([]);
   const [identityCardTypes, setIdentityCardTypes] = useState([]);
   const [genders, setGenders] = useState([]);
@@ -157,8 +158,8 @@ const PatientCase = () => {
 
   const getFiles = async () => {
     try {
-      //const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
-      //setPdfData(res.data);
+      const res = await sendRequestWithFile("GET", "/files", "", "", "", true);
+      setFiles(res.data);
     } catch (error) {
       handleErrors(error);
     }
@@ -431,6 +432,10 @@ const PatientCase = () => {
     } else {
       console.error("Error en la solicitud:", error);
     }
+  };
+
+  const navigateToLegalDocs = (id) => {
+    history(`/legalDocs/${id}`);
   };
 
   return (
@@ -842,19 +847,44 @@ const PatientCase = () => {
                 />
               </DivTab>
               <DivTab title="Consentimiento">
+                
                 <br />
-                <DivAdd>
-                  <button
-                    className="btn btn-dark"
-                    data-bs-dismiss="modal"
-                    ref={closeRef}
-                    onClick={closeModal}
-                  >
-                    <Link to="/legalDocs" className="btn btn-dark">
-                      <i className="fa-solid fa-signature"> Firmar Documento</i>
-                    </Link>
-                  </button>
-                </DivAdd>
+                <DivTable
+                  col="8"
+                  off="2"
+                  classLoad={classLoad}
+                  classTable={classTable}
+                ><p> Documentos a Firmar:</p>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Nombre del Archivo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="table-group-divider">
+                      {files.map((row, i) => (
+                        <tr key={row.id}>
+                          <td>{i + 1}</td>
+                          <td>{row.fileName}</td>
+                          <td>
+                            <button
+                              className="btn btn-light"
+                              data-bs-dismiss="modal"
+                              ref={closeRef}
+                              onClick={() => {
+                                navigateToLegalDocs(row.id);
+                                closeModal();
+                              }}
+                            >
+                              <i className="fa-solid fa-signature"></i> Firmar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </DivTable>
               </DivTab>
             </DivTabs>
             <br />

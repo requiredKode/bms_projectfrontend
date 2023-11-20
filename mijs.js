@@ -1,5 +1,5 @@
-export function cargarPDF() {
-  var pdfData = atob($("#pdfBase64").val());
+export function cargarPDF(pdfData) {
+  //var pdfData = atob($("#pdfBase64").val());
 
   var maxPDFx = 595;
   var maxPDFy = 842;
@@ -98,98 +98,57 @@ export function cargarPDF() {
     renderizzaPlaceholder(parametri);
   });
 
-  function renderizzaPlaceholder(parametri) {
-    var maxHTMLx = $("#the-canvas").width();
-    var maxHTMLy = $("#the-canvas").height();
+}
 
-    var paramContainerWidth = $("#parametriContainer").width();
-    var yCounterOfGenerated = 0;
-    var numOfMaxItem = 25;
-    var notValidHeight = 30;
-    var y = 0;
-    var x = 6;
+export function renderizzaPlaceholder(parametri) {
+  var maxHTMLx = $("#the-canvas").width();
+  var maxHTMLy = $("#the-canvas").height();
 
-    for (var i = 0; i < parametri.length; i++) {
-      var param = parametri[i];
+  var paramContainerWidth = $("#parametriContainer").width();
+  var yCounterOfGenerated = 0;
+  var numOfMaxItem = 25;
+  var notValidHeight = 30;
+  var y = 0;
+  var x = 6;
 
-      if (i > 0 && i % numOfMaxItem == 0) {
-        yCounterOfGenerated = 0;
-      }
+  for (var i = 0; i < parametri.length; i++) {
+    var param = parametri[i];
 
-      var classStyle = "";
-      var valore = param.valore;
-
-      if (i > 0 && i % numOfMaxItem == 0) {
-        yCounterOfGenerated = 0;
-      }
-
-      y = yCounterOfGenerated;
-      yCounterOfGenerated += notValidHeight;
-      classStyle = "drag-drop dropped-out";
-
-      $("#parametriContainer").append(
-        '<div class="' +
-          classStyle +
-          '" data-id="-1" data-toggle="' +
-          valore +
-          '" data-valore="' +
-          valore +
-          '" data-x="' +
-          x +
-          '" data-y="' +
-          y +
-          '" style="transform: translate(' +
-          x +
-          "px, " +
-          y +
-          'px);">  <span class="circle"></span><span class="descrizione">' +
-          param.descrizione +
-          " </span></div>"
-      );
+    if (i > 0 && i % numOfMaxItem == 0) {
+      yCounterOfGenerated = 0;
     }
-  }
 
-  function renderizzaInPagina(parametri) {
-    var maxHTMLx = $("#the-canvas").width();
-    var maxHTMLy = $("#the-canvas").height();
+    var classStyle = "";
+    var valore = param.valore;
 
-    var paramContainerWidth = $("#parametriContainer").width();
-    var yCounterOfGenerated = 0;
-    var numOfMaxItem = 26;
-    var notValidHeight = 30;
-    var y = 0;
-    var x = 6;
-    for (var i = 0; i < parametri.length; i++) {
-      var param = parametri[i];
-
-      var classStyle = "drag-drop can-drop";
-      var valore = param.valore;
-
-      var pdfY = maxPDFy - param.posizioneY - offsetY;
-      y = (pdfY * maxHTMLy) / maxPDFy;
-      x = (param.posizioneX * maxHTMLx) / maxPDFx + paramContainerWidth;
-
-      $("#parametriContainer").append(
-        '<div class="' +
-          classStyle +
-          '" data-id="' +
-          param.idParametroModulo +
-          '" data-toggle="' +
-          valore +
-          '" data-valore="' +
-          valore +
-          '" data-x="' +
-          x +
-          '" data-y="' +
-          y +
-          '" style="transform: translate(' +
-          x +
-          "px, " +
-          y +
-          'px);">  <span class="circle"></span><span class="descrizione">' +
-          param.descrizione +
-          " </span></div>"
-      );
+    if (i > 0 && i % numOfMaxItem == 0) {
+      yCounterOfGenerated = 0;
     }
+
+    y = yCounterOfGenerated;
+    yCounterOfGenerated += notValidHeight;
+    classStyle = "drag-drop dropped-out";
+
+    $("#parametriContainer").append(
+      '<div id="paramData' +
+        (i + 1) +
+        '" class="' +
+        classStyle +
+        '" data-id="-1" data-toggle="' +
+        valore +
+        '" data-valore="' +
+        valore +
+        '" data-x="' +
+        x +
+        '" data-y="' +
+        y +
+        '" style="transform: translate(' +
+        x +
+        'px, ' +
+        y +
+        'px);">  <span class="circle"></span><span class="descrizione">' +
+        param.descrizione +
+        " </span></div>"
+    );
   }
 }

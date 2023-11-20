@@ -51,7 +51,7 @@ function App() {
           <Route path="/settings" element={<SETTINGS />} />
           <Route path="/users" element={<USERS />} />
           <Route path="/schedule" element={<SCHEDULE />} />
-          <Route path="/legalDocs" element={<LEGALDOCS />} />
+          <Route path="/legalDocs/:id" element={<LEGALDOCS />} />
         </Route>
         
       </Routes>
