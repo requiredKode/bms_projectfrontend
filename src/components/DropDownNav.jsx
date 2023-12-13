@@ -44,6 +44,11 @@ function DropDownNav() {
             Archivos
           </Link>
         </Dropdown.Item>
+        <Dropdown.Item>
+          <Link to="/WABot" className="nav-link">
+            WABot
+          </Link>
+        </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
   );

@@ -19,6 +19,8 @@ import SETTINGS from './views/settings/index';
 import USERS from './views/users/index';
 import SCHEDULE from './views/schedule/index';
 import LEGALDOCS from './views/legalDocs/index';
+import INVOICE from './views/invoice/index';
+import SERVICEINVENTORY from './views/serviceinventory/index';
 
 import LOGIN from './views/Login';
 import REGISTER from './views/Register';
@@ -52,6 +54,8 @@ function App() {
           <Route path="/users" element={<USERS />} />
           <Route path="/schedule" element={<SCHEDULE />} />
           <Route path="/legalDocs/:id" element={<LEGALDOCS />} />
+          <Route path="/invoice" element={<INVOICE />} />
+          <Route path="/serviceinventory" element={<SERVICEINVENTORY />} />
         </Route>
         
       </Routes>

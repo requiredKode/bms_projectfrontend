@@ -847,14 +847,23 @@ const PatientCase = () => {
                 />
               </DivTab>
               <DivTab title="Consentimiento">
-                
+                <br />
+
+                <div className="d-grid col-10 mx-auto">
+                  <p> Debe guardar los datos antes de proceder a Firmar:</p>
+                  <button className="btn btn-success">
+                    {/*onClick={closeModal}*/}
+                    <i className="fa-solid fa-save"></i> Guardar
+                  </button>
+                </div>
                 <br />
                 <DivTable
                   col="8"
                   off="2"
                   classLoad={classLoad}
                   classTable={classTable}
-                ><p> Documentos a Firmar:</p>
+                >
+                  <p> Documentos a Firmar:</p>
                   <table className="table table-bordered">
                     <thead>
                       <tr>
@@ -887,12 +896,6 @@ const PatientCase = () => {
                 </DivTable>
               </DivTab>
             </DivTabs>
-            <br />
-            <div className="d-grid col-10 mx-auto">
-              <button className="btn btn-success" onClick={closeModal}>
-                <i className="fa-solid fa-save"></i> Guardar
-              </button>
-            </div>
           </form>
         </div>
         <div className="modal-footer">

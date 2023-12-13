@@ -61,6 +61,11 @@ const Nav = () => {
                   </Link>
                 </li>
                 <li className="nav-item">
+                  <Link to="/serviceinventory" className="nav-link" onClick={toggleMenu}>
+                    Productos X Servicios
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link
                     to="/patientCase"
                     className="nav-link"
@@ -94,6 +99,15 @@ const Nav = () => {
                     onClick={toggleMenu}
                   >
                     Citas
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    to="/invoice"
+                    className="nav-link"
+                    onClick={toggleMenu}
+                  >
+                    Facturacion
                   </Link>
                 </li>
                 <li className="nav-item">

@@ -46,7 +46,8 @@
     "react-signature-canvas": "^1.0.6",
     "react-to-print": "^2.14.15",
     "reactstrap": "^9.2.0",
-    "sweetalert2": "^11.7.31"
+    "sweetalert2": "^11.7.31",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

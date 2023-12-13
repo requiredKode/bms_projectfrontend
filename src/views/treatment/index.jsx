@@ -1,24 +1,24 @@
-import React, { useEffect, useState, useRef } from 'react';
-import DivAdd from '../../components/DivAdd';
-import DivTable from '../../components/DivTable';
-import DivInput from '../../components/DivInput';
-import Modal from '../../components/Modal';
-import { confirmation, sendRequest } from '../../functions';
-import { PaginationControl } from 'react-bootstrap-pagination-control';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from "react";
+import DivAdd from "../../components/DivAdd";
+import DivTable from "../../components/DivTable";
+import DivInput from "../../components/DivInput";
+import Modal from "../../components/Modal";
+import { confirmation, sendRequest } from "../../functions";
+import { PaginationControl } from "react-bootstrap-pagination-control";
+import { useNavigate } from "react-router-dom";
 
 const Treatment = () => {
   const history = useNavigate(); // Instancia de useHistory
 
   const [treatments, setTreatments] = useState([]);
-  const [id, setId] = useState('');
-  const [companyId, setCompanyId] = useState('');
-  const [treatmentName, setTreatmentName] = useState('');
+  const [id, setId] = useState("");
+  const [companyId, setCompanyId] = useState("");
+  const [treatmentName, setTreatmentName] = useState("");
 
-  const [operation, setOperation] = useState('');
-  const [title, setTitle] = useState('');
-  const [classLoad, setClassLoad] = useState('');
-  const [classTable, setClassTable] = useState('d-none');
+  const [operation, setOperation] = useState("");
+  const [title, setTitle] = useState("");
+  const [classLoad, setClassLoad] = useState("");
+  const [classTable, setClassTable] = useState("d-none");
   const [rows, setRows] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(0);
@@ -26,8 +26,8 @@ const Treatment = () => {
   const nameInputRef = useRef();
   const closeRef = useRef();
 
-  let method = '';
-  let url = '';
+  let method = "";
+  let url = "";
 
   useEffect(() => {
     getTreatment(1);
@@ -36,38 +36,43 @@ const Treatment = () => {
   const getTreatment = async (page) => {
     try {
       const res = await sendRequest(
-        'GET',
+        "GET",
         `/treatment?page=${page}&per_page=${pageSize}`,
-        '',
-        '',
-        '',
+        "",
+        "",
+        "",
         true
       );
       setTreatments(res.data);
       setRows(res.total);
       setPageSize(res.per_page);
-      setClassTable('');
-      setClassLoad('d-none');
+      setClassTable("");
+      setClassLoad("d-none");
     } catch (error) {
       // Comprueba si la respuesta contiene el error NOT_SESSION
-      if (error.response && error.response.data && error.response.data.error === 'NOT_SESSION') {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.error === "NOT_SESSION"
+      ) {
         // Redirige al usuario a la página de inicio de sesión y limpia el almacenamiento
         localStorage.clear(); // Esto eliminará todos los datos almacenados en el local storage
-        history.push('/login'); // Cambia '/login' por la ruta real de tu página de inicio de sesión
+        history.push("/login"); // Cambia '/login' por la ruta real de tu página de inicio de sesión
         return;
       }
-  
+
       // Manejar otros errores aquí si es necesario
-      console.error('Error en la solicitud:', error);
-  }
-  }
+      console.error("Error en la solicitud:", error);
+    }
+  };
+  
   const deleteTreatment = (id, name) => {
-    confirmation(name, '/treatment/' + id, '/treatment');
+    confirmation(name, "/treatment/" + id, "/treatment");
   };
 
   const clear = () => {
-    setCompanyId('');
-    setTreatmentName('');
+    setCompanyId("");
+    setTreatmentName("");
   };
 
   const openModal = (OPERATION, ID, TREATMENTNAME) => {
@@ -76,26 +81,32 @@ const Treatment = () => {
     setOperation(OPERATION);
     setId(ID);
     if (OPERATION === 1) {
-      setTitle('Create Treatment');
+      setTitle("Create Treatment");
     } else {
-      setTitle('Update Treatment');
+      setTitle("Update Treatment");
       setTreatmentName(TREATMENTNAME);
     }
   };
 
   const save = async (e) => {
     e.preventDefault();
-    method = operation === 1 ? 'POST' : 'PUT';
-    url = operation === 1 ? '/treatment' : '/treatment/' + id;
+    method = operation === 1 ? "POST" : "PUT";
+    url = operation === 1 ? "/treatment" : "/treatment/" + id;
     const form = {
-      treatmentName: treatmentName
+      treatmentName: treatmentName,
     };
     if (operation === 1) {
       form.companyId = companyId;
     }
     try {
-      const res = await sendRequest(method, url, form, 'GUARDADO CON EXITO', '');
-      if (method === 'PUT' && res.data && res.data.companyId !== null) {
+      const res = await sendRequest(
+        method,
+        url,
+        form,
+        "GUARDADO CON EXITO",
+        ""
+      );
+      if (method === "PUT" && res.data && res.data.companyId !== null) {
         closeRef.current.click();
       }
       if (res.data && res.data.companyId !== null) {
@@ -107,7 +118,7 @@ const Treatment = () => {
     } catch (error) {
       // Manejar errores aquí si es necesario
     }
-  }
+  };
 
   const goPage = (p) => {
     setPage(p);
@@ -162,11 +173,16 @@ const Treatment = () => {
           </tbody>
         </table>
       </DivTable>
-      <PaginationControl changePage={page => goPage(page)} next={true} limit={pageSize} page={page} total={rows} />
+      <PaginationControl
+        changePage={(page) => goPage(page)}
+        next={true}
+        limit={pageSize}
+        page={page}
+        total={rows}
+      />
       <Modal title={title} modal="modalTreatment">
         <div className="modal-body">
           <form onSubmit={save}>
-            
             <DivInput
               type="text"
               icon="fa-user"
@@ -182,11 +198,14 @@ const Treatment = () => {
                 <i className="fa-solid fa-save"></i> SAVE
               </button>
             </div>
-
           </form>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-dark" data-bs-dismiss="modal" ref={closeRef}>
+          <button
+            className="btn btn-dark"
+            data-bs-dismiss="modal"
+            ref={closeRef}
+          >
             Close
           </button>
         </div>

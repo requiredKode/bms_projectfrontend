@@ -14,6 +14,8 @@ const AppointmentSchedule = () => {
   const history = useNavigate(); // Instancia de useHistory
 
   const [appointmentSchedules, setAppointmentSchedules] = useState([]);
+  const [patientCaseFilter, setPatientCaseFilter] = useState("");
+
   const [patientCases, setPatientCases] = useState([]);
   const [services, setServices] = useState([]);
   const [id, setId] = useState("");
@@ -47,16 +49,21 @@ const AppointmentSchedule = () => {
     getAppointmentSchedule(1);
   }, []);
 
+  useEffect(() => {
+    getAppointmentSchedule(1);
+  }, [page, pageSize, patientCaseFilter]);
+
+  
   const getAppointmentSchedule = async (page) => {
     try {
-      const res = await sendRequest(
-        "GET",
-        `/appointmentSchedule?page=${page}&per_page=${pageSize}`,
-        "",
-        "",
-        "",
-        true
-      );
+      let endpoint = `/appointmentSchedule?page=${page}&per_page=${pageSize}`;
+      
+      if (patientCaseFilter) {
+        endpoint += `&patientCaseName=${patientCaseFilter}`;
+      }
+  
+      const res = await sendRequest("GET", endpoint, "", "", "", true);
+      
       setAppointmentSchedules(res.data);
       setRows(res.total);
       setPageSize(res.per_page);
@@ -198,7 +205,19 @@ const AppointmentSchedule = () => {
           <i className="fa-solid fa-circle-plus"></i> Agregar
         </button>
       </DivAdd>
-      <DivTable col="8" off="2" classLoad={classLoad} classTable={classTable}>
+      <DivTable col="8" off="2" classLoad={classLoad} classTable={classTable}><div className="mb-3">
+  <label htmlFor="patientCaseFilter" className="form-label">
+    Filtrar por Nombre del Paciente
+  </label>
+  <DivInput
+    type="text"
+    icon="fa-search"
+    value={patientCaseFilter}
+    className="form-control"
+    placeholder="Nombre del Paciente"
+    handleChange={(e) => setPatientCaseFilter(e.target.value)}
+  />
+</div>
         <table className="table table-bordered">
           <thead>
             <tr>

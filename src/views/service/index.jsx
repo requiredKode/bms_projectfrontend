@@ -3,6 +3,7 @@ import DivAdd from '../../components/DivAdd';
 import DivTable from '../../components/DivTable';
 import DivInput from '../../components/DivInput';
 import DivTextArea from '../../components/DivTextArea';
+import DivSelect from "../../components/DivSelect";
 import Modal from '../../components/Modal';
 import { confirmation, sendRequest } from '../../functions';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
@@ -12,8 +13,10 @@ const Service = () => {
   const history = useNavigate();
 
   const [services, setServices] = useState([]);
+  const [money, setMoney] = useState([]);
   const [id, setId] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [moneyId, setMoneyId] = useState('');
   const [code, setCode] = useState('');
   const [serviceName, setServiceName] = useState('');
   const [descriptionService, setDescriptionService] = useState('');
@@ -35,6 +38,7 @@ const Service = () => {
 
   useEffect(() => {
     getService(1);
+    fetchData("money", setMoney);
   }, []);
 
   const getService = async (page) => {
@@ -57,6 +61,22 @@ const Service = () => {
     }
   };
 
+  const fetchData = async (endpoint, setter) => {
+    try {
+      const res = await sendRequest(
+        "GET",
+        `/${endpoint}?page=${1}&per_page=${100}`,
+        "",
+        "",
+        "",
+        true
+      );
+      setter(res.data);
+    } catch (error) {
+      handleErrors(error);
+    }
+  };
+
   const deleteService = (id, name) => {
     confirmation(name, '/service/' + id, '/service');
   };
@@ -67,9 +87,10 @@ const Service = () => {
     setServiceName('');
     setDescriptionService('');
     setCost('');
+    setMoneyId('');
   };
 
-  const openModal = (OPERATION, ID, CODE, SERVICENAME, DESCRIPTIONSERVICE, COST) => {
+  const openModal = (OPERATION, ID, CODE, SERVICENAME, DESCRIPTIONSERVICE, COST, MONEYID) => {
     clear();
     setTimeout(() => nameInputRef.current.focus(), 600);
     setOperation(OPERATION);
@@ -82,6 +103,7 @@ const Service = () => {
       setServiceName(SERVICENAME);
       setDescriptionService(DESCRIPTIONSERVICE);
       setCost(COST);
+      setMoneyId(MONEYID);
     }
   };
 
@@ -94,10 +116,12 @@ const Service = () => {
       serviceName: serviceName,
       descriptionService: descriptionService,
       cost: cost,
+      moneyId: moneyId !== "" ? moneyId : money[0].id,
     };
     if (operation === 1) {
       form.companyId = companyId;
     }
+
     try {
       const res = await sendRequest(method, url, form, 'GUARDADO CON EXITO', '');
       if (method === 'PUT' && res.data && res.data.companyId !== null) {
@@ -163,6 +187,7 @@ const Service = () => {
               <th>Servicio</th>
               <th>Descripcion</th>
               <th>Costo</th>
+              <th>Moneda</th>
             </tr>
           </thead>
           <tbody className="table-group-divider">
@@ -183,12 +208,13 @@ const Service = () => {
                   )}
                 </td>
                 <td>{row.cost}</td>
+                <td>{row.money.moneyName}</td>
                 <td>
                   <button
                     className="btn btn-warning"
                     data-bs-toggle="modal"
                     data-bs-target="#modalService"
-                    onClick={() => openModal(2, row.id, row.code, row.serviceName, row.descriptionService, row.cost)}
+                    onClick={() => openModal(2, row.id, row.code, row.serviceName, row.descriptionService, row.cost, row.moneyId)}
                   >
                     <i className="fa-solid fa-edit"></i>
                   </button>
@@ -248,6 +274,15 @@ const Service = () => {
               required="required"
               handleChange={(e) => setCost(e.target.value)}
             />
+            <DivSelect
+                icon="fa-coins"
+                name="moneyId"
+                value={moneyId}
+                className="form-select"
+                options={money}
+                handleChange={(e) => setMoneyId(e.target.value)}
+                displayProperty="moneyName"
+              />
             <div className="d-grid col-10 mx-auto">
               <button className="btn btn-success">
                 <i className="fa-solid fa-save"></i> Guardar
