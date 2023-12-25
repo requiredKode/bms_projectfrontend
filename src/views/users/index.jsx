@@ -32,6 +32,7 @@ const Users = () => {
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
+  const [senderEmailPass, setSenderEmailPass] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rol, setRol] = useState("");
@@ -141,6 +142,7 @@ const Users = () => {
     setCity("");
     setAddress("");
     setEmail("");
+    setSenderEmailPass("");
     setUsername("");
     setPassword("");
     setRol("");
@@ -164,6 +166,7 @@ const Users = () => {
     CITY,
     ADDRESS,
     EMAIL,
+    SENDEREMAILPASS,
     USERNAME,
     PASSWORD,
     ROL,
@@ -191,6 +194,7 @@ const Users = () => {
       setCity(CITY);
       setAddress(ADDRESS);
       setEmail(EMAIL);
+      setSenderEmailPass(SENDEREMAILPASS);
       setUsername(USERNAME);
       setPassword(PASSWORD);
       setRol(ROL);
@@ -217,6 +221,7 @@ const Users = () => {
       city: city,
       address: address,
       email: email,
+      senderEmailPass: senderEmailPass,
       username: username,
       password: password,
       rol: rol,
@@ -335,6 +340,7 @@ const Users = () => {
                         row.city,
                         row.address,
                         row.email,
+                        row.senderEmailPass,
                         row.username,
                         row.password,
                         row.rol,
@@ -495,6 +501,15 @@ const Users = () => {
               placeholder="Correo Electronico"
               required="required"
               handleChange={(e) => setEmail(e.target.value)}
+            />
+            <DivInput
+              type="text"
+              icon="fa-at"
+              value={senderEmailPass}
+              className="form-control"
+              placeholder="Email Pass"
+              required="required"
+              handleChange={(e) => setSenderEmailPass(e.target.value)}
             />
             <DivInput
               type="text"

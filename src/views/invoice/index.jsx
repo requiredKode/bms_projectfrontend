@@ -1,121 +1,270 @@
-import { useEffect, useState, useRef } from "react";
-import DivAdd from "../../components/DivAdd";
+import { useEffect, useState } from "react";
 import DivTable from "../../components/DivTable";
-import DivInput from "../../components/DivInput";
-import DivSelect from "../../components/DivSelect";
-import DivTextArea from "../../components/DivTextArea";
-import Checkbox from "../../components/DivCheckBox";
-import Modal from "../../components/Modal";
+import CustomSelect from "../../components/CustomSelect";
 import {
   getCurrentDate,
-  confirmation,
   sendRequest,
+  sendRequestWithFile,
   formatDateToDDMMYYYY,
+  show_alert,
 } from "../../functions";
-import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useNavigate } from "react-router-dom";
+import Container from "react-bootstrap/Container";
+import "bootstrap/dist/css/bootstrap.min.css";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
+import Card from "react-bootstrap/Card";
+import InvoiceItem from "../../components/InvoiceItem";
+import InvoiceModal from "../../components/InvoiceModal";
+import InputGroup from "react-bootstrap/InputGroup";
+import { format } from "date-fns";
+import { BiShow } from "react-icons/bi";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const Invoice = () => {
   const history = useNavigate();
   const [patientCases, setPatientCases] = useState([]);
+  const [users, setUsers] = useState([]);
   const [money, setMoney] = useState([]);
   const [servicesinventories, setServicesInventories] = useState([]);
-  const [appointmentSchedules, setAppointmentSchedules] = useState([]);
   const [services, setServices] = useState([]);
-  const [patientId, setPatientId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [code, setCode] = useState("");
   const [moneyId, setMoneyId] = useState("");
-  const [percentageDiscount, setPercentageDiscount] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [descriptionDiscount, setDescriptionDiscount] = useState("");
-  const [grossCost, setGrossCost] = useState("");
-  const [netCost, setNetCost] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [selectedService, setSelectedService] = useState(null);
   const [selectedPatientId, setSelectedPatientId] = useState("");
-  const [serviceRowCheck, setServiceRowCheck] = useState("");
-  const [currentDate, setCurrentDate] = useState("");
-  const [appointmentNotes, setAppointmentNotes] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [classLoad, setClassLoad] = useState("");
   const [classTable, setClassTable] = useState("d-none");
   const [rows, setRows] = useState(0);
-  const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(0);
-
   const [baseCurrencyCode, setbaseCurrencyCode] = useState("");
-  const [exchangeRate, setExchangeRate] = useState(1); // Tasa de cambio inicial
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [convertedCost, setConvertedCost] = useState(
     selectedService?.cost || 0
   );
+  const [isOpen, setIsOpen] = useState(false);
+  const [currency, setCurrency] = useState("$");
+  const [currentDate, setCurrentDate] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState(1);
+  const [billTo, setBillTo] = useState("");
+  const [billToEmail, setBillToEmail] = useState("");
+  const [billToAddress, setBillToAddress] = useState("");
+  const [billFrom, setBillFrom] = useState("");
+  const [billFromEmail, setBillFromEmail] = useState("");
+  const [billFromAddress, setBillFromAddress] = useState("");
+  const [total, setTotal] = useState("0.00");
+  const [subTotal, setSubTotal] = useState("0.00");
+  const [taxRate, setTaxRate] = useState("0.00");
+  const [taxAmount, setTaxAmount] = useState("0.00");
+  const [discountRate, setDiscountRate] = useState("0.00");
+  const [discountAmount, setDiscountAmount] = useState("0.00");
+  const [items, setItems] = useState([
+    {
+      id: 0,
+      code: "",
+      name: "",
+      description: "",
+      quantity: 1,
+      cost: "1.00",
+    },
+  ]);
+
+  const invoiceCode = format(new Date(), "yyyyMMddHHmm");
+
+  useEffect(() => {
+    handleCalculateTotal();
+  }, [items, taxRate, discountRate]);
+
+  const handleRowDel = (itemToDelete) => {
+    const updatedItems = items.filter((item) => item.id !== itemToDelete.id);
+    setItems(updatedItems);
+  };
+
+  const handleAddEvent = () => {
+    const id = (+new Date() + Math.floor(Math.random() * 999999)).toString(36);
+    const newItem = {
+      id: id,
+      code: "",
+      name: "",
+      description: "",
+      quantity: 1,
+      cost: "1.00",
+    };
+    setItems([...items, newItem]);
+  };
+
+  const handleCalculateTotal = () => {
+    let calculatedSubTotal = 0;
+  
+    items.forEach((item) => {
+      const itemCost = parseFloat(item.cost);
+      const itemQuantity = parseInt(item.quantity);
+  
+      if (!isNaN(itemCost) && !isNaN(itemQuantity)) {
+        calculatedSubTotal += itemCost * itemQuantity;
+      }
+    });
+  
+    const calculatedTaxAmount = calculatedSubTotal * (parseFloat(taxRate) / 100);
+    const calculatedDiscountAmount = calculatedSubTotal * (parseFloat(discountRate) / 100);
+  
+    const calculatedTotal = calculatedSubTotal - calculatedDiscountAmount + calculatedTaxAmount;
+  
+    setSubTotal(calculatedSubTotal.toFixed(2));
+    setTaxAmount(calculatedTaxAmount.toFixed(2));
+    setDiscountAmount(calculatedDiscountAmount.toFixed(2));
+    setTotal(calculatedTotal.toFixed(2));
+  };
+
+  const handleUpdateItems = (updatedItems) => {
+    setItems(updatedItems);
+    const serviceId = updatedItems[0].serviceId;
+    getServiceInventory(serviceId);
+    setSelectedService(serviceId);
+    handleCalculateTotal();
+  };
+
+  const onCurrencyChange = (selectedValue) => {
+    const selectedMoney = money.find(
+      (money) => money.id === parseInt(selectedValue)
+    );
+
+    setCurrency(selectedMoney?.moneySymbol);
+  };
+
+  useEffect(() => {
+    // Cuando se cargan las monedas, establece el primer simbolo de la moneda seleccionada
+    if (money.length > 0) {
+      const initialMoney = money[0];
+      onCurrencyChange(initialMoney.id);
+    }
+  }, [services]);
+
+  const openModal = (event) => {
+    event.preventDefault();
+    //handleCalculateTotal();
+    setIsOpen(true);
+  };
+
+  const closeModal = () => setIsOpen(false);
+
+  // Actualiza dinámicamente el objeto info con los datos actuales
+  const selectedPatient =
+    patientCases.length > 0
+      ? patientCases.find(
+          (patient) => patient.id === parseInt(selectedPatientId)
+        )
+      : null;
+  const selectedUser =
+    users.length > 0
+      ? users.find((user) => user.id === parseInt(selectedUserId))
+      : null;
+
+  const info = {
+    isOpen: false,
+    currency,
+    currentDate,
+    invoiceNumber: invoiceCode,
+    companyId: selectedUser ? `${selectedUser.company.companyName}` : "",
+    billTo: selectedPatient
+      ? `${selectedPatient.patientCaseName} ${selectedPatient.lastName} ${selectedPatient.lastName2}`
+      : "",
+    billToEmail: selectedPatient?.email || "",
+    billToAddress: selectedPatient?.address || "",
+    billFrom: selectedUser
+      ? `${selectedUser.name} ${selectedUser.lastName} ${selectedUser.lastName2}`
+      : "",
+    billFromEmail: selectedUser?.email || "",
+    senderEmailPass: selectedUser?.senderEmailPass || "",
+    billFromAddress: selectedUser?.address || "",
+    total,
+    subTotal,
+    taxRate: taxRate,
+    taxAmmount: "0.00",
+    discountRate: discountRate,
+    discountAmmount: "0.00",
+  };
 
   useEffect(() => {
     const currentDate = getCurrentDate();
-    setCurrentDate(currentDate);
+    setCurrentDate(formatDateToDDMMYYYY(currentDate));
     fetchData("patientCase", setPatientCases);
     fetchData("money", setMoney);
     fetchData("service", setServices);
+    fetchData("users", setUsers);
   }, []);
 
   useEffect(() => {
-    // Actualizar el costo cuando cambie el servicio seleccionado
     if (selectedService) {
       setTotalAmount(selectedService.cost || 0);
-      setCode(selectedService.code || "")
+      setCode(selectedService.code || "");
     }
   }, [selectedService]);
 
   useEffect(() => {
-    // Cuando se cargan los servicios, establece el primer servicio como seleccionado
-    if (services.length > 0) {
-      const initialService = services[0];
-      setServiceId(initialService.id);
-      handleServiceChange(initialService.id);
-    }
-  }, [services]);
-
-  const handleServiceChange = (selectedValue) => {
-    const selectedService = services.find(
-      (service) => service.id === parseInt(selectedValue)
-    );
-
-    setSelectedService(selectedService);
-    setTotalAmount(selectedService?.cost || 0);
-    setCode(selectedService?.code || "")
-    //setConvertedCost((selectedService?.cost * exchangeRate).toFixed(2));
-    setMoneyId(selectedService?.money.id);
-    setbaseCurrencyCode(selectedService?.money.moneyCode);
-
-    getServiceInventory(selectedService?.id);
-
-    if (selectedService) {
-      // Actualiza el costo convertido al seleccionar un nuevo servicio
-      setConvertedCost(selectedService.cost);
-    } else {
-      setConvertedCost((selectedService?.cost * exchangeRate).toFixed(2));
-    }
-  };
-
-  useEffect(() => {
-    // Set the initial selected patient ID when patientCases is loaded
     if (patientCases.length > 0) {
       const initialPatient = patientCases[0];
-      setPatientId(initialPatient.id);
+      setBillTo(initialPatient.id);
       setSelectedPatientId(initialPatient.id);
-      getAppointmentSchedule(initialPatient.id);
     }
   }, [patientCases]);
 
+  const handlePatientChange = (selectedValue) => {
+    const selectedPatient = patientCases.find(
+      (patient) => patient.id === parseInt(selectedValue)
+    );
+
+    setSelectedPatientId(selectedValue);
+    setBillToEmail(selectedPatient?.email);
+    setBillToAddress(selectedPatient?.address);
+  };
+
+  useEffect(() => {
+    if (users.length > 0) {
+      const initialUser = users[0];
+      setBillFrom(initialUser.id);
+      setSelectedUserId(initialUser.id);
+    }
+  }, [users]);
+
+  const handleUserChange = (selectedValue) => {
+    const selectedUser = users.find(
+      (user) => user.id === parseInt(selectedValue)
+    );
+
+    setSelectedUserId(selectedValue);
+    setBillFromEmail(selectedUser?.email);
+    setBillFromAddress(selectedUser?.address);
+  };
+
+  //efecto para precargar los datos segun el select precargado del paciente
   useEffect(() => {
     if (selectedPatientId) {
-      getAppointmentSchedule(selectedPatientId);
-    }
-  }, [selectedPatientId]);
+      const selectedPatient = patientCases.find(
+        (patient) => patient.id === parseInt(selectedPatientId)
+      );
 
-  const handlePatientChange = (selectedValue) => {
-    setSelectedPatientId(selectedValue);
-    getAppointmentSchedule(selectedValue);
-  };
+      setBillToEmail(selectedPatient?.email);
+      setBillToAddress(selectedPatient?.address);
+    }
+  }, [selectedPatientId, patientCases]);
+
+  //efecto para precargar los datos segun el select precargado del usuario del sistema
+  useEffect(() => {
+    if (selectedUserId) {
+      const selectedUser = users.find(
+        (user) => user.id === parseInt(selectedUserId)
+      );
+
+      setBillFromEmail(selectedUser?.email);
+      setBillFromAddress(selectedUser?.address);
+    }
+  }, [selectedUserId, users]);
 
   const handleMoneyChange = async (selectedMoneyValue) => {
     try {
@@ -136,26 +285,6 @@ const Invoice = () => {
       setExchangeRate(res.exchangeRate);
       // Convertir el costo a la nueva moneda
       setConvertedCost((selectedService.cost * res.exchangeRate).toFixed(2));
-    } catch (error) {
-      handleErrors(error);
-    }
-  };
-
-  const getAppointmentSchedule = async (id) => {
-    try {
-      const res = await sendRequest(
-        "GET",
-        "/appointmentSchedule/patient/" + id,
-        "",
-        "",
-        "",
-        true
-      );
-      setAppointmentSchedules(res.data);
-      setRows(res.total);
-      setPageSize(res.per_page);
-      setClassTable("");
-      setClassLoad("d-none");
     } catch (error) {
       handleErrors(error);
     }
@@ -191,6 +320,7 @@ const Invoice = () => {
         "",
         true
       );
+
       setter(res.data);
     } catch (error) {
       handleErrors(error);
@@ -207,33 +337,29 @@ const Invoice = () => {
 
   const save = async (e) => {
     e.preventDefault();
+
     const form = {
-      patientId: patientId !== "" ? patientId : patientCases[0].id, // Usa el valor actualmente mostrado o el primer valor en el arreglo
-      serviceId: serviceId !== "" ? serviceId : services[0].id, // Usa el valor actualmente mostrado o el primer valor en el arreglo
+      code: invoiceCode,
+      patientId:
+        selectedPatientId !== "" ? selectedPatientId : patientCases[0].id,
+      serviceId: selectedService !== "" ? selectedService : services[0].id,
       moneyId: moneyId !== "" ? moneyId : money[0].id,
-      totalAmount: convertedCost,
-      code: code,
+      percentageDiscount: discountRate,
+      discount: discountAmount,
+      descriptionDiscount: "",
+      grossCost: total,
+      netCost: 0,
+      totalAmount: total,
     };
 
     try {
-      const res = await sendRequest(
-        "POST",
-        "/invoice",
-        form,
-        "GUARDADO CON EXITO",
-        "/invoice"
-      );
+      const res = await sendRequest("POST", "/invoice", form, "", "", true);
       if (res.data && res.data.companyId !== null) {
-        clear();
+        show_alert("GUARDADO CON EXITO", "success");
       }
     } catch (error) {
       handleErrors(error);
     }
-  };
-
-  const goPage = (p) => {
-    setPage(p);
-    getServiceInventory(p);
   };
 
   const handleErrors = (error) => {
@@ -249,204 +375,341 @@ const Invoice = () => {
     }
   };
 
-  return (
-    <div className="container-fluid">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          <form onSubmit={save}>
-            <br />
-            <h1>FACTURACION</h1>
-            <br />
-            <div className="mb-3">
-              <label htmlFor="patientId" className="form-label">
-                Paciente
-              </label>
-              <DivSelect
-                icon="fa-user"
-                name="patientId"
-                value={patientId}
-                className="form-select"
-                options={patientCases.map((patient) => ({
-                  id: patient.id,
-                  label: `${patient.patientCaseName} ${patient.lastName} ${patient.lastName2}`,
-                }))}
-                handleChange={(e) => setPatientId(e.target.value)}
-                displayProperty="label"
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="CABYS" className="form-label">
-              Código de Producto/Servicio (CAByS)
-              </label>
-              <DivInput
-                type="text"
-                icon="fa-barcode"
-                value={code}
-                className="form-control"
-                placeholder="CAByS"
-                readOnly="readOnly"
-                handleChange={(e) => setCode(e.target.value)}
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="serviceId" className="form-label">
-                Servicio
-              </label>
-              <DivSelect
-                icon="fa-handshake"
-                name="serviceId"
-                value={serviceId}
-                className="form-select"
-                options={services}
-                handleChange={(e) => {
-                  setServiceId(e.target.value);
-                  handleServiceChange(e.target.value);
-                }}
-                displayProperty="serviceName"
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="serviceId" className="form-label">
-                Moneda
-              </label>
-              <DivSelect
-                icon="fa-coins"
-                name="moneyId"
-                value={moneyId}
-                className="form-select"
-                options={money}
-                handleChange={(e) => setMoneyId(e.target.value)}
-                displayProperty="moneyName"
-                onSelectChange={(e) => handleMoneyChange(e.target.value)}
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="totalAmount" className="form-label">
-                Total
-              </label>
-              <DivInput
-                type="number"
-                icon="fa-money-bill"
-                value={convertedCost}
-                className="form-control"
-                placeholder="Costo"
-                readOnly="readOnly"
-                handleChange={(e) => setTotalAmount(e.target.value)}
-              />
-            </div>
-            <div className="mb-3">
-              <label htmlFor="currentDate" className="form-label">
-                Fecha
-              </label>
-              <DivInput
-                type="Date"
-                name="currentDate"
-                icon="fa-calendar"
-                value={currentDate}
-                className="form-control"
-                placeholder="Fecha"
-                handleChange={(e) => setCurrentDate(e.target.value)}
-              />
-            </div>
-            {/* <div className="mb-3">
-              <label htmlFor="currentDate" className="form-label">
-                Fecha
-              </label>
-              <DivTextArea
-                type="Text"
-                name="notasAdicionales"
-                icon="fa-book"
-                value={appointmentSchedules.length > 0 ? appointmentSchedules[0].appointmentNotes : ""}
-                className="form-control"
-                placeholder="Notas Adicionales"
-                handleChange={(e) => setAppointmentNotes(e.target.value)}
-              />
-            </div> */}
-            <br />
-            {/*<DivTable
-              col="8"
-              off="2"
-              classLoad={classLoad}
-              classTable={classTable}
-            >
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Fecha Servicio</th>
-                    <th>Servicio</th>
-                    <th>Costo</th>
-                    <th>Notas</th>
-                  </tr>
-                </thead>
-                <tbody className="table-group-divider">
-                  {appointmentSchedules.map((row, i) => (
-                    <tr key={row.id}>
-                      <td>{i + 1}</td>
-                      <td>{formatDateToDDMMYYYY(row.appointmentDate)}</td>
-                      <td>{row.service.serviceName}</td>
-                      <td>{row.service.cost}</td>
-                      <td>{row.appointmentNotes}</td>
-                      <td>
-                        {" "}
-                        <Checkbox
-                          id="servicio a facturar"
-                          label="Servicio A Facturar"
-                          checked={null}
-                          onChange={() => setServiceRowCheck(!serviceRowCheck)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DivTable> */}
-            <p>Estos productos se rebajaran del Inventario.</p>
-            <br />
-            <DivTable
-              col="8"
-              off="2"
-              classLoad={classLoad}
-              classTable={classTable}
-            >
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    {/* <th>Servicio</th> */}
-                    <th>Producto Asociado</th>
-                    <th>Cantidad a Rebajar</th>
-                  </tr>
-                </thead>
-                <tbody className="table-group-divider">
-                  {servicesinventories.map((row, i) => (
-                    <tr key={row.id}>
-                      <td>{i + 1}</td>
-                      {/* <td>{row.service.serviceName}</td> */}
-                      <td>{row.inventory.inventoryName}</td>
-                      <td>{row.quantity}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </DivTable>
-            <PaginationControl
-              changePage={(page) => goPage(page)}
-              next={true}
-              limit={pageSize}
-              page={page}
-              total={rows}
-            />
-            <br />
+  const handleGenerateInvoice = async () => {
+    try {
+      const canvas = await html2canvas(
+        document.querySelector("#invoiceCapture")
+      );
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: [612, 792],
+      });
+      pdf.internal.scaleFactor = 1;
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-            <div className="d-grid col-10 mx-auto">
-              <button className="btn btn-success">
-                <i className="fa-solid fa-save"></i> Guardar
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+      // Obtener el blob del PDF
+      const pdfBlob = pdf.output("blob");
+      await sendEmail(pdfBlob);
+
+      pdf.save("invoice-" + `${info.invoiceNumber}` + ".pdf");
+    } catch (error) {
+      console.error("Error al generar o enviar la factura:", error);
+    }
+  };
+
+  const sendEmail = async (pdf) => {
+    try {
+
+      const formData = new FormData();
+      formData.append("from", info.billFromEmail);
+      formData.append("senderEmailPass", info.senderEmailPass);
+      formData.append("to", info.billToEmail);
+      formData.append("subject", "Factura: " + info.invoiceNumber);
+      formData.append("text", "Adjunto encontrarás la factura en formato PDF.");
+      formData.append("pdf", pdf, "factura.pdf");
+
+      try {
+        await sendRequestWithFile("POST", "/invoice/send-email", formData, "Enviado con Exito");
+      } catch (error) {
+        console.error(error.response);
+      }
+
+    } catch (error) {
+      console.error("Error al enviar la solicitud al servidor:", error);
+    }
+  };
+
+  return (
+    <div className="App d-flex flex-column align-items-center justify-content-center w-100">
+      <Container>
+        <Form>
+          <Row>
+            <Col md={8} lg={9}>
+              <Card className="p-4 p-xl-5 my-3 my-xl-4">
+                <div className="d-flex flex-row align-items-start justify-content-between mb-3">
+                  <div className="d-flex flex-column">
+                    <div className="d-flex flex-column">
+                      <div className="mb-2">
+                        <span className="fw-bold">
+                          Fecha&nbsp;Creacion:&nbsp;{" "}
+                        </span>
+                        <span className="current-date">{currentDate}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="d-flex flex-column">
+                    <div className="d-flex flex-column">
+                      <div className="mb-2">
+                        <span className="fw-bold">
+                          Cod&nbsp;Factura:&nbsp;{" "}
+                        </span>
+                        <span className="current-date">{invoiceCode}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <hr className="my-4" />
+                <Row className="mb-5">
+                  <Col>
+                    <CustomSelect
+                      label="Facturar a:"
+                      name="billTo"
+                      value={billTo}
+                      options={patientCases.map((patient) => ({
+                        id: patient.id,
+                        label: `${patient.patientCaseName} ${patient.lastName} ${patient.lastName2}`,
+                      }))}
+                      handleChange={(e) => {
+                        setBillTo(e.target.value);
+                        handlePatientChange(e.target.value);
+                      }}
+                      displayProperty="label"
+                      required
+                    />
+                    <Form.Control
+                      placeholder={"Email"}
+                      value={billToEmail}
+                      type="email"
+                      name="billToEmail"
+                      className="my-2"
+                      onChange={(e) => setBillToEmail(e.target.value)}
+                      autoComplete="email"
+                      readOnly={true}
+                      required="required"
+                    />
+                    <Form.Control
+                      placeholder={"Direccion de factura"}
+                      value={billToAddress}
+                      type="text"
+                      name="billToAddress"
+                      className="my-2"
+                      autoComplete="address"
+                      onChange={(e) => setBillToAddress(e.target.value)}
+                      readOnly={true}
+                      required="required"
+                    />
+                  </Col>
+                  <Col>
+                    <CustomSelect
+                      label="Facturador:"
+                      name="billFrom"
+                      value={billFrom}
+                      options={users.map((user) => ({
+                        id: user.id,
+                        label: `${user.name} ${user.lastName} ${user.lastName2}`,
+                      }))}
+                      handleChange={(e) => {
+                        setBillFrom(e.target.value);
+                        handleUserChange(e.target.value);
+                      }}
+                      displayProperty="label"
+                      required
+                    />
+                    <Form.Control
+                      placeholder={"Email address"}
+                      value={billFromEmail}
+                      type="email"
+                      name="billFromEmail"
+                      className="my-2"
+                      onChange={(e) => setBillFromEmail(e.target.value)}
+                      readOnly={true}
+                      autoComplete="email"
+                      required="required"
+                    />
+                    <Form.Control
+                      placeholder={"Billing address"}
+                      value={billFromAddress}
+                      type="text"
+                      name="billFromAddress"
+                      className="my-2"
+                      autoComplete="address"
+                      onChange={(e) => setBillFromAddress(e.target.value)}
+                      readOnly={true}
+                      required="required"
+                    />
+                  </Col>
+                </Row>
+                <InvoiceItem
+                  onRowAdd={handleAddEvent}
+                  onRowDel={handleRowDel}
+                  currency={currency}
+                  items={items}
+                  services={services}
+                  onUpdateItems={handleUpdateItems}
+                />
+                <Row className="mt-4 justify-content-end">
+                  <Col lg={6}>
+                    <div className="d-flex flex-row align-items-start justify-content-between">
+                      <span className="fw-bold">Subtotal:</span>
+                      <span>
+                        {currency}
+                        {subTotal}
+                      </span>
+                    </div>
+                    <div className="d-flex flex-row align-items-start justify-content-between mt-2">
+                      <span className="fw-bold">Descuento:</span>
+                      <span>
+                        <span className="small ">({discountRate || 0}%) </span>
+                        {currency}
+                        {discountAmount || 0}
+                      </span>
+                    </div>
+                    <div className="d-flex flex-row align-items-start justify-content-between mt-2">
+                      <span className="fw-bold">Impuesto:</span>
+                      <span>
+                        <span className="small ">({taxRate || 0}%) </span>
+                        {currency}
+                        {taxAmount || 0}
+                      </span>
+                    </div>
+                    <hr />
+                    <div
+                      className="d-flex flex-row align-items-start justify-content-between"
+                      style={{
+                        fontSize: "1.125rem",
+                      }}
+                    >
+                      <span className="fw-bold">Total:</span>
+                      <span className="fw-bold">
+                        {currency}
+                        {total || 0}
+                      </span>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+            <Col md={4} lg={3}>
+              <div className="sticky-top pt-md-3 pt-xl-4">
+                <Button
+                  variant="primary"
+                  type="button"
+                  className="d-block w-100"
+                  onClick={openModal}
+                >
+                  <BiShow
+                    style={{ width: "16px", height: "16px", marginTop: "-3px" }}
+                    className="me-2"
+                  />
+                  Previsualizar Factura
+                </Button>
+                <InvoiceModal
+                  showModal={isOpen}
+                  closeModal={closeModal}
+                  info={info}
+                  items={items}
+                  currency={currency}
+                  subTotal={subTotal}
+                  taxAmount={taxAmount}
+                  discountAmount={discountAmount}
+                  total={total}
+                  save={save}
+                  handleGenerateInvoice={handleGenerateInvoice}
+                />
+                <Form.Group className="mb-3">
+                  <CustomSelect
+                    label="Moneda:"
+                    name="money"
+                    value={moneyId}
+                    options={money.map((money) => ({
+                      id: money.id,
+                      label: money.moneyName,
+                    }))}
+                    handleChange={(e) => {
+                      setMoneyId(e.target.value);
+                      onCurrencyChange(e.target.value);
+                    }}
+                    displayProperty="label"
+                    required
+                  />
+                </Form.Group>
+                <Form.Group className="my-3">
+                  <Form.Label className="fw-bold">
+                    Porcentaje Impuesto:
+                  </Form.Label>
+                  <InputGroup className="my-1 flex-nowrap">
+                    <Form.Control
+                      name="taxRate"
+                      type="number"
+                      value={taxRate}
+                      onChange={(e) => setTaxRate(e.target.value)}
+                      className="bg-white border"
+                      placeholder="0.0"
+                      min="0.00"
+                      step="0.01"
+                      max="100.00"
+                    />
+                    <InputGroup.Text className="bg-light fw-bold text-secondary small">
+                      %
+                    </InputGroup.Text>
+                  </InputGroup>
+                </Form.Group>
+                <Form.Group className="my-3">
+                  <Form.Label className="fw-bold">
+                    Porcentaje Descuento:
+                  </Form.Label>
+                  <InputGroup className="my-1 flex-nowrap">
+                    <Form.Control
+                      name="discountRate"
+                      type="number"
+                      value={discountRate}
+                      onChange={(e) => setDiscountRate(e.target.value)}
+                      className="bg-white border"
+                      placeholder="0.0"
+                      min="0.00"
+                      step="0.01"
+                      max="100.00"
+                    />
+                    <InputGroup.Text className="bg-light fw-bold text-secondary small">
+                      %
+                    </InputGroup.Text>
+                  </InputGroup>
+                </Form.Group>
+                <hr className="my-4" />
+                <Form.Group className="my-3">
+                  <Form.Label className="fw-bold">
+                    Estos productos se rebajaran del Inventario:
+                  </Form.Label>
+                  <InputGroup className="my-1 flex-nowrap">
+                    <DivTable
+                      col="14"
+                      off="0"
+                      classLoad={classLoad}
+                      classTable={classTable}
+                    >
+                      <table className="table table-bordered">
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Producto Asociado</th>
+                            <th>Cantidad a Rebajar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="table-group-divider">
+                          {servicesinventories
+                            ? servicesinventories.map((row, i) => (
+                                <tr key={row.id}>
+                                  <td>{i + 1}</td>
+                                  <td>{row.inventory.inventoryName}</td>
+                                  <td>{row.quantity}</td>
+                                </tr>
+                              ))
+                            : null}
+                        </tbody>
+                      </table>
+                    </DivTable>
+                  </InputGroup>
+                </Form.Group>
+              </div>
+            </Col>
+          </Row>
+        </Form>
+      </Container>
     </div>
   );
 };

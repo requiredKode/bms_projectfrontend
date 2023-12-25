@@ -247,7 +247,7 @@ const Inventory = () => {
               icon="fa-arrow-up-9-1"
               value={quantity}
               className="form-control"
-              placeholder="Cantidad"
+              placeholder="Cantidad a Rebajar"
               required="required"
               handleChange={(e) => setQuantity(e.target.value)}
             />

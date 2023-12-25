@@ -13,6 +13,8 @@ const Money = () => {
   const [moneys, setMoneys] = useState([]);
   const [id, setId] = useState('');
   const [moneyName, setMoneyName] = useState('');
+  const [moneyCode, setMoneyCode] = useState('');
+  const [moneySymbol, setMoneySymbol] = useState('');
   const [operation, setOperation] = useState('');
   const [title, setTitle] = useState('');
   const [classLoad, setClassLoad] = useState('');
@@ -70,9 +72,11 @@ const Money = () => {
 
   const clear = () => {
     setMoneyName('');
+    setMoneyCode('');
+    setMoneySymbol('');
   };
 
-  const openModal = (OPERATION, ID, MONEYNAME) => {
+  const openModal = (OPERATION, ID, MONEYNAME, MONEYCODE, MONEYSYMBOL) => {
     clear();
     setTimeout(() => nameInputRef.current.focus(), 600);
     setOperation(OPERATION);
@@ -82,6 +86,8 @@ const Money = () => {
     } else {
       setTitle('Actualizar Moneda');
       setMoneyName(MONEYNAME);
+      setMoneyCode(MONEYCODE);
+      setMoneySymbol(MONEYSYMBOL);
     }
   };
 
@@ -90,7 +96,9 @@ const Money = () => {
     method = operation === 1 ? 'POST' : 'PUT';
     url = operation === 1 ? '/money' : '/money/' + id;
     const form = {
-      moneyName: moneyName
+      moneyName: moneyName,
+      moneyCode: moneyCode,
+      moneySymbol: moneySymbol
     };
 
     try {
@@ -132,6 +140,8 @@ const Money = () => {
             <tr>
               <th>#</th>
               <th>Moneda</th>
+              <th>Codigo</th>
+              <th>Simbolo</th>
             </tr>
           </thead>
           <tbody className="table-group-divider">
@@ -139,12 +149,14 @@ const Money = () => {
               <tr key={row.id}>
                 <td>{i + 1}</td>
                 <td>{row.moneyName}</td>
+                <td>{row.moneyCode}</td>
+                <td>{row.moneySymbol}</td>
                 <td>
                   <button
                     className="btn btn-warning"
                     data-bs-toggle="modal"
                     data-bs-target="#modalMoney"
-                    onClick={() => openModal(2, row.id, row.moneyName)}
+                    onClick={() => openModal(2, row.id, row.moneyName, row.moneyCode, row.moneySymbol)}
                   >
                     <i className="fa-solid fa-edit"></i>
                   </button>
@@ -175,6 +187,26 @@ const Money = () => {
               required="required"
               ref={nameInputRef}
               handleChange={(e) => setMoneyName(e.target.value)}
+            />
+            <DivInput
+              type="text"
+              icon="fa-coins"
+              value={moneyCode}
+              className="form-control"
+              placeholder="Codigo Moneda"
+              required="required"
+              ref={nameInputRef}
+              handleChange={(e) => setMoneyCode(e.target.value)}
+            />
+            <DivInput
+              type="text"
+              icon="fa-coins"
+              value={moneySymbol}
+              className="form-control"
+              placeholder="Simbolo Moneda"
+              required="required"
+              ref={nameInputRef}
+              handleChange={(e) => setMoneySymbol(e.target.value)}
             />
             <div className="d-grid col-10 mx-auto">
               <button className="btn btn-success">

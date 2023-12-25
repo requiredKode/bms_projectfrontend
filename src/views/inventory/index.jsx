@@ -184,7 +184,7 @@ const Inventory = () => {
         url,
         form,
         "GUARDADO CON EXITO",
-        ""
+        "/home"
       );
       if (method === "PUT" && res.data && res.data.companyId !== null) {
         closeRef.current.click();
